@@ -1,0 +1,124 @@
+# ==========================
+# OS / Editor
+# ==========================
+.DS_Store
+Thumbs.db
+
+.vscode/
+.idea/
+
+# ==========================
+# Python / Django
+# ==========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+share/
+wheels/
+
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+
+media/
+staticfiles/
+
+# Migrations (optional)
+# Keep these after first production release
+# **/migrations/*
+# !**/migrations/__init__.py
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Pytest / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.coverage.*
+
+# Type checker
+.mypy_cache/
+.pyre/
+
+# ==========================
+# Node / Next.js
+# ==========================
+node_modules/
+
+.next/
+out/
+dist/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env
+frontend/.env.local
+frontend/.env
+
+# TypeScript
+*.tsbuildinfo
+
+# ==========================
+# Docker
+# ==========================
+docker-compose.override.yml
+
+# ==========================
+# Logs
+# ==========================
+logs/
+*.log
+
+# ==========================
+# Temporary files
+# ==========================
+tmp/
+temp/
+*.tmp
+
+# ==========================
+# VSCode test history
+# ==========================
+.history/
+
+# ==========================
+# Generated files
+# ==========================
+coverage/
+
+# ==========================
+# PostgreSQL
+# ==========================
+*.sql
+*.dump
+*.backup
