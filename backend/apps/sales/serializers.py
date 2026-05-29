@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.branches.models import Branch
 from apps.inventory.models import Product
-from apps.sales.models import Sale
+from apps.sales.models import Sale, SaleItem, Payment
 
 
 class CheckoutItemSerializer(serializers.Serializer):
@@ -60,4 +60,58 @@ class SaleResponseSerializer(serializers.ModelSerializer):
             "total_amount",
             "created_at",
             "items",
+        ]
+
+
+class PaymentResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = [
+            "id",
+            "payment_method",
+            "amount",
+            "reference",
+            "created_at",
+        ]
+
+
+class SaleListSerializer(serializers.ModelSerializer):
+    branch = serializers.CharField(source="branch.name")
+    cashier = serializers.CharField(source="cashier.full_name")
+
+    class Meta:
+        model = Sale
+        fields = [
+            "id",
+            "sale_number",
+            "branch",
+            "cashier",
+            "sale_type",
+            "subtotal",
+            "total_amount",
+            "created_at",
+        ]
+
+
+class SaleDetailSerializer(serializers.ModelSerializer):
+    branch = serializers.CharField(source="branch.name")
+    cashier = serializers.CharField(source="cashier.full_name")
+    customer = serializers.CharField(source="customer.name", allow_null=True)
+    items = SaleItemResponseSerializer(many=True)
+    payments = PaymentResponseSerializer(many=True)
+
+    class Meta:
+        model = Sale
+        fields = [
+            "id",
+            "sale_number",
+            "branch",
+            "cashier",
+            "customer",
+            "sale_type",
+            "subtotal",
+            "total_amount",
+            "created_at",
+            "items",
+            "payments",
         ]
