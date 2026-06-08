@@ -99,6 +99,20 @@ class Sale(models.Model):
         related_name="sales",
     )
 
+    expected_cash = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
+    difference = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
     subtotal = models.DecimalField(
         max_digits=12,
         decimal_places=2,

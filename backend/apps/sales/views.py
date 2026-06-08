@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db.models import Sum
 
 from apps.branches.models import Branch
 from apps.inventory.models import Product
@@ -156,7 +157,21 @@ class CloseCashShiftAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        shift.closing_cash = serializer.validated_data["closing_cash"]
+        cash_sales = (
+            shift.sales.filter(payments__payment_method="CASH").aggregate(
+                total=Sum("payments__amount")
+            )["total"]
+            or 0
+        )
+
+        closing_cash = serializer.validated_data["closing_cash"]
+
+        expected_cash = shift.opening_cash + cash_sales
+        difference = closing_cash - expected_cash
+
+        shift.closing_cash = closing_cash
+        shift.expected_cash = expected_cash
+        shift.difference = difference
         shift.status = "CLOSED"
         shift.closed_at = timezone.now()
         shift.save()

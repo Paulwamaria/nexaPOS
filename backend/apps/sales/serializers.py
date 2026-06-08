@@ -130,6 +130,8 @@ class CashShiftSerializer(serializers.ModelSerializer):
             "opening_cash",
             "closing_cash",
             "status",
+            "expected_cash",
+            "difference",
             "opened_at",
             "closed_at",
         ]
