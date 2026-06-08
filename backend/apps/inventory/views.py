@@ -1,7 +1,11 @@
 from django.db import models, transaction
 from django.db import transaction
 from rest_framework import status
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import (
+    ListAPIView,
+    ListCreateAPIView,
+    RetrieveUpdateDestroyAPIView,
+)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,6 +17,8 @@ from .serializers import (
     ProductSerializer,
     BranchStockSerializer,
     StockAdjustmentSerializer,
+    CategorySerializer,
+    ProductCreateUpdateSerializer,
 )
 
 
@@ -105,3 +111,33 @@ class StockAdjustmentAPIView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class CategoryListCreateAPIView(ListCreateAPIView):
+    permission_classes = [IsStoreKeeperOrAdmin]
+    serializer_class = CategorySerializer
+
+    def get_queryset(self):
+        return Category.objects.all().order_by("name")
+
+
+class ProductListCreateAPIView(ListCreateAPIView):
+    permission_classes = [IsStoreKeeperOrAdmin]
+
+    def get_queryset(self):
+        return Product.objects.select_related("category").order_by("name")
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return ProductCreateUpdateSerializer
+        return ProductSerializer
+
+
+class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsStoreKeeperOrAdmin]
+    queryset = Product.objects.select_related("category").all()
+
+    def get_serializer_class(self):
+        if self.request.method in ["PUT", "PATCH"]:
+            return ProductCreateUpdateSerializer
+        return ProductSerializer
