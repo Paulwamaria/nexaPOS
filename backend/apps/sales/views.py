@@ -16,10 +16,12 @@ from apps.sales.serializers import (
     CashShiftSerializer,
     CashShiftOpenSerializer,
     CashShiftCloseSerializer,
+    SaleReturnCreateSerializer,
+    SaleReturnResponseSerializer,
 )
-from apps.sales.services import process_checkout
+from apps.sales.services import process_checkout, process_sale_return
 from rest_framework.generics import ListAPIView, RetrieveAPIView
-from apps.sales.models import Sale, CashShift
+from apps.sales.models import Sale, CashShift, SaleReturn, SaleItem
 from apps.accounts.permissions import IsCashierOrAdmin
 
 
@@ -178,6 +180,7 @@ class CloseCashShiftAPIView(APIView):
 
         return Response(CashShiftSerializer(shift).data)
 
+
 class CurrentCashShiftAPIView(APIView):
     permission_classes = [IsCashierOrAdmin]
 
@@ -199,3 +202,59 @@ class CurrentCashShiftAPIView(APIView):
             )
 
         return Response(CashShiftSerializer(shift).data)
+
+
+class SaleReturnCreateAPIView(APIView):
+    permission_classes = [IsCashierOrAdmin]
+
+    def post(self, request):
+        serializer = SaleReturnCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        sale = get_object_or_404(Sale, id=data["sale_id"])
+
+        items = []
+        for item in data["items"]:
+            sale_item = get_object_or_404(
+                SaleItem,
+                id=item["sale_item_id"],
+            )
+            items.append(
+                {
+                    "sale_item": sale_item,
+                    "quantity": item["quantity"],
+                    "restock": item.get("restock", True),
+                }
+            )
+
+        try:
+            sale_return = process_sale_return(
+                sale=sale,
+                returned_by=request.user,
+                reason=data.get("reason", ""),
+                items=items,
+            )
+        except ValueError as error:
+            return Response(
+                {"detail": str(error)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            SaleReturnResponseSerializer(sale_return).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class SaleReturnListAPIView(ListAPIView):
+    permission_classes = [IsCashierOrAdmin]
+    serializer_class = SaleReturnResponseSerializer
+
+    def get_queryset(self):
+        return (
+            SaleReturn.objects.select_related("sale", "returned_by")
+            .prefetch_related("items__product")
+            .order_by("-created_at")
+        )

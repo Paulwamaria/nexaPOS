@@ -193,3 +193,58 @@ class Payment(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class SaleReturn(models.Model):
+    sale = models.ForeignKey(
+        Sale,
+        on_delete=models.CASCADE,
+        related_name="returns",
+    )
+    branch = models.ForeignKey(
+        Branch,
+        on_delete=models.CASCADE,
+    )
+    returned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+    )
+    reason = models.TextField(blank=True)
+    total_refund_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Return for {self.sale.sale_number}"
+
+
+class SaleReturnItem(models.Model):
+    sale_return = models.ForeignKey(
+        SaleReturn,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+    sale_item = models.ForeignKey(
+        SaleItem,
+        on_delete=models.CASCADE,
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+    )
+    quantity = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+    refund_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+    restock = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.product.name} returned"

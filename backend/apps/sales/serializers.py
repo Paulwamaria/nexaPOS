@@ -2,7 +2,14 @@ from rest_framework import serializers
 
 from apps.branches.models import Branch
 from apps.inventory.models import Product
-from apps.sales.models import Sale, SaleItem, Payment, CashShift
+from apps.sales.models import (
+    Sale,
+    SaleItem,
+    Payment,
+    CashShift,
+    SaleReturn,
+    SaleReturnItem,
+)
 
 
 class CheckoutItemSerializer(serializers.Serializer):
@@ -40,11 +47,18 @@ class CheckoutSerializer(serializers.Serializer):
         return value
 
 
-class SaleItemResponseSerializer(serializers.Serializer):
-    product = serializers.CharField(source="product.name")
-    quantity = serializers.DecimalField(max_digits=12, decimal_places=2)
-    unit_price = serializers.DecimalField(max_digits=12, decimal_places=2)
-    total = serializers.DecimalField(max_digits=12, decimal_places=2)
+class SaleItemResponseSerializer(serializers.ModelSerializer):
+    product = serializers.CharField(source="product.name", read_only=True)
+
+    class Meta:
+        model = SaleItem
+        fields = [
+            "id",
+            "product",
+            "quantity",
+            "unit_price",
+            "total",
+        ]
 
 
 class SaleResponseSerializer(serializers.ModelSerializer):
@@ -94,11 +108,11 @@ class SaleListSerializer(serializers.ModelSerializer):
 
 
 class SaleDetailSerializer(serializers.ModelSerializer):
-    branch = serializers.CharField(source="branch.name")
-    cashier = serializers.CharField(source="cashier.full_name")
-    customer = serializers.CharField(source="customer.name", allow_null=True)
-    items = SaleItemResponseSerializer(many=True)
-    payments = PaymentResponseSerializer(many=True)
+    branch = serializers.CharField(source="branch.name", read_only=True)
+    cashier = serializers.CharField(source="cashier.full_name", read_only=True)
+    customer = serializers.SerializerMethodField()
+    items = SaleItemResponseSerializer(many=True, read_only=True)
+    payments = PaymentResponseSerializer(many=True, read_only=True)
 
     class Meta:
         model = Sale
@@ -115,6 +129,11 @@ class SaleDetailSerializer(serializers.ModelSerializer):
             "items",
             "payments",
         ]
+
+    def get_customer(self, obj):
+        if obj.customer:
+            return obj.customer.name
+        return None
 
 
 class CashShiftSerializer(serializers.ModelSerializer):
@@ -148,3 +167,64 @@ class CashShiftOpenSerializer(serializers.ModelSerializer):
 
 class CashShiftCloseSerializer(serializers.Serializer):
     closing_cash = serializers.DecimalField(max_digits=12, decimal_places=2)
+
+
+class SaleReturnItemInputSerializer(serializers.Serializer):
+    sale_item_id = serializers.IntegerField()
+    quantity = serializers.DecimalField(max_digits=12, decimal_places=2)
+    restock = serializers.BooleanField(default=True)
+
+
+class SaleReturnCreateSerializer(serializers.Serializer):
+    sale_id = serializers.IntegerField()
+    reason = serializers.CharField(required=False, allow_blank=True)
+    items = SaleReturnItemInputSerializer(many=True)
+
+
+class SaleReturnItemResponseSerializer(serializers.ModelSerializer):
+    product = serializers.CharField(source="product.name")
+
+    class Meta:
+        model = SaleReturnItem
+        fields = [
+            "id",
+            "product",
+            "quantity",
+            "refund_amount",
+            "restock",
+        ]
+
+
+class SaleReturnResponseSerializer(serializers.ModelSerializer):
+    sale_number = serializers.CharField(source="sale.sale_number")
+    returned_by = serializers.CharField(source="returned_by.full_name")
+    items = SaleReturnItemResponseSerializer(many=True)
+
+    class Meta:
+        model = SaleReturn
+        fields = [
+            "id",
+            "sale_number",
+            "reason",
+            "total_refund_amount",
+            "returned_by",
+            "created_at",
+            "items",
+        ]
+
+
+class SaleItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(
+        source="product.name",
+        read_only=True,
+    )
+
+    class Meta:
+        model = SaleItem
+        fields = [
+            "id",
+            "product",
+            "product_name",
+            "quantity",
+            "price",
+        ]

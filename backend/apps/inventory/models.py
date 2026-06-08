@@ -97,6 +97,7 @@ class StockMovement(models.Model):
     class MovementType(models.TextChoices):
         PURCHASE = "PURCHASE", "Purchase"
         SALE = "SALE", "Sale"
+        SALE_RETURN = "SALE_RETURN", "Sale Return"
         ADJUSTMENT_IN = "ADJUSTMENT_IN", "Adjustment In"
         ADJUSTMENT_OUT = "ADJUSTMENT_OUT", "Adjustment Out"
 

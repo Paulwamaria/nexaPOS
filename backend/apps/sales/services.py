@@ -3,7 +3,14 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.inventory.models import BranchStock, StockMovement
-from apps.sales.models import Sale, SaleItem, Payment, CashShift
+from apps.sales.models import (
+    Sale,
+    SaleItem,
+    Payment,
+    CashShift,
+    SaleReturn,
+    SaleReturnItem,
+)
 
 
 def generate_sale_number():
@@ -116,3 +123,77 @@ def process_checkout(
         )
 
     return sale
+
+
+@transaction.atomic
+def process_sale_return(*, sale, returned_by, reason="", items=None):
+    if not items:
+        raise ValueError("Return must have at least one item.")
+
+    sale_return = SaleReturn.objects.create(
+        sale=sale,
+        branch=sale.branch,
+        returned_by=returned_by,
+        reason=reason,
+        total_refund_amount=0,
+    )
+
+    total_refund = Decimal("0.00")
+
+    for item in items:
+        sale_item = item["sale_item"]
+        quantity = Decimal(str(item["quantity"]))
+        restock = item.get("restock", True)
+
+        if sale_item.sale_id != sale.id:
+            raise ValueError("Returned item does not belong to this sale.")
+
+        if quantity <= 0:
+            raise ValueError("Return quantity must be greater than zero.")
+
+        if quantity > sale_item.quantity:
+            raise ValueError(
+                f"Cannot return more than sold quantity for {sale_item.product.name}."
+            )
+
+        refund_amount = sale_item.unit_price * quantity
+        total_refund += refund_amount
+
+        SaleReturnItem.objects.create(
+            sale_return=sale_return,
+            sale_item=sale_item,
+            product=sale_item.product,
+            quantity=quantity,
+            refund_amount=refund_amount,
+            restock=restock,
+        )
+
+        if restock:
+            stock, _ = BranchStock.objects.select_for_update().get_or_create(
+                branch=sale.branch,
+                product=sale_item.product,
+                defaults={
+                    "quantity": 0,
+                    "reorder_level": 5,
+                },
+            )
+
+            previous_quantity = stock.quantity
+            stock.quantity += quantity
+            stock.save()
+
+            StockMovement.objects.create(
+                branch=sale.branch,
+                product=sale_item.product,
+                movement_type="SALE_RETURN",
+                quantity=quantity,
+                previous_quantity=previous_quantity,
+                new_quantity=stock.quantity,
+                created_by=returned_by,
+                notes=f"Return for {sale.sale_number}",
+            )
+
+    sale_return.total_refund_amount = total_refund
+    sale_return.save()
+
+    return sale_return
