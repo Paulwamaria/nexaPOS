@@ -96,6 +96,14 @@ def process_checkout(
     total_paid = Decimal("0.00")
 
     for payment in payments:
+        total_paid += Decimal(str(payment["amount"]))
+
+    if total_paid < sale.total_amount:
+        raise ValueError(
+            f"Amount paid is less than sale total. Total: {sale.total_amount}, Paid: {total_paid}"
+        )
+
+    for payment in payments:
         amount = Decimal(str(payment["amount"]))
         total_paid += amount
 
