@@ -5,14 +5,20 @@ from rest_framework.views import APIView
 
 from apps.branches.models import Branch
 from apps.inventory.models import Product
-from apps.sales.serializers import CheckoutSerializer, SaleResponseSerializer, SaleListSerializer, SaleDetailSerializer
+from apps.sales.serializers import (
+    CheckoutSerializer,
+    SaleResponseSerializer,
+    SaleListSerializer,
+    SaleDetailSerializer,
+)
 from apps.sales.services import process_checkout
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from apps.sales.models import Sale
+from apps.accounts.permissions import IsCashierOrAdmin
 
 
 class CheckoutAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsCashierOrAdmin]
 
     def post(self, request):
         serializer = CheckoutSerializer(data=request.data)
@@ -52,16 +58,15 @@ class CheckoutAPIView(APIView):
             response_serializer.data,
             status=status.HTTP_201_CREATED,
         )
-        
+
+
 class SaleListAPIView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = SaleListSerializer
 
     def get_queryset(self):
-        return (
-            Sale.objects
-            .select_related("branch", "cashier", "customer")
-            .order_by("-created_at")
+        return Sale.objects.select_related("branch", "cashier", "customer").order_by(
+            "-created_at"
         )
 
 
@@ -75,4 +80,4 @@ class SaleDetailAPIView(RetrieveAPIView):
     ).prefetch_related(
         "items__product",
         "payments",
-    )       
+    )

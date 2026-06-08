@@ -7,10 +7,11 @@ from rest_framework.views import APIView
 from apps.expenses.models import Expense
 from apps.inventory.models import BranchStock
 from apps.sales.models import Sale, SaleItem
+from apps.accounts.permissions import IsAdminOrSuperAdmin
 
 
 class DashboardReportAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminOrSuperAdmin]
 
     def get(self, request):
         today = timezone.localdate()

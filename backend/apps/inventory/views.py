@@ -5,6 +5,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from apps.accounts.permissions import IsStoreKeeperOrAdmin
 
 from apps.branches.models import Branch
 from .models import Product, BranchStock, StockMovement
@@ -48,7 +49,7 @@ class LowStockListAPIView(ListAPIView):
 
 
 class StockAdjustmentAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsStoreKeeperOrAdmin]
 
     @transaction.atomic
     def post(self, request):

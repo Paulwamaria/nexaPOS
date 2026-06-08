@@ -1,5 +1,6 @@
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import IsAuthenticated
+from apps.accounts.permissions import IsAdminOrSuperAdmin, IsStoreKeeperOrAdmin
 
 from .models import ExpenseCategory, Expense
 from .serializers import (
@@ -10,13 +11,13 @@ from .serializers import (
 
 
 class ExpenseCategoryListCreateAPIView(ListCreateAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminOrSuperAdmin]
     serializer_class = ExpenseCategorySerializer
     queryset = ExpenseCategory.objects.all().order_by("name")
 
 
 class ExpenseListCreateAPIView(ListCreateAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminOrSuperAdmin]
 
     def get_queryset(self):
         return Expense.objects.select_related(
