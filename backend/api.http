@@ -1,0 +1,4 @@
+@baseUrl = http://localhost:8000
+GET {{baseUrl}}/api/inventory/products/
+GET {{baseUrl}}/api/inventory/stocks/
+GET {{baseUrl}}/api/inventory/low-stock/
