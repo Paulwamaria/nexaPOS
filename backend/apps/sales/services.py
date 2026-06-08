@@ -3,7 +3,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.inventory.models import BranchStock, StockMovement
-from apps.sales.models import Sale, SaleItem, Payment
+from apps.sales.models import Sale, SaleItem, Payment, CashShift
 
 
 def generate_sale_number():
@@ -24,11 +24,21 @@ def process_checkout(
 
     subtotal = Decimal("0.00")
 
+    open_shift = CashShift.objects.filter(
+        branch=branch,
+        cashier=cashier,
+        status="OPEN",
+    ).first()
+
+    if not open_shift:
+        raise ValueError("You must open a cash shift before processing sales.")
+
     sale = Sale.objects.create(
         sale_number=generate_sale_number(),
         branch=branch,
         cashier=cashier,
         customer=customer,
+        cash_shift=open_shift,
         sale_type=sale_type,
         subtotal=0,
         total_amount=0,

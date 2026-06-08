@@ -91,6 +91,14 @@ class Sale(models.Model):
         choices=SaleType.choices,
     )
 
+    cash_shift = models.ForeignKey(
+        "sales.CashShift",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sales",
+    )
+
     subtotal = models.DecimalField(
         max_digits=12,
         decimal_places=2,
