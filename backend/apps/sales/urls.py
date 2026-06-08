@@ -7,6 +7,7 @@ from .views import (
     CashShiftListAPIView,
     OpenCashShiftAPIView,
     CloseCashShiftAPIView,
+    CurrentCashShiftAPIView,
 )
 
 urlpatterns = [
@@ -19,5 +20,8 @@ urlpatterns = [
         "shifts/<int:pk>/close/",
         CloseCashShiftAPIView.as_view(),
         name="cash-shift-close",
+    ),
+    path(
+        "shifts/current/", CurrentCashShiftAPIView.as_view(), name="cash-shift-current"
     ),
 ]

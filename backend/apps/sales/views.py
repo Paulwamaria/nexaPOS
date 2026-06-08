@@ -177,3 +177,25 @@ class CloseCashShiftAPIView(APIView):
         shift.save()
 
         return Response(CashShiftSerializer(shift).data)
+
+class CurrentCashShiftAPIView(APIView):
+    permission_classes = [IsCashierOrAdmin]
+
+    def get(self, request):
+        shift = (
+            CashShift.objects.select_related("branch", "cashier")
+            .filter(
+                cashier=request.user,
+                status="OPEN",
+            )
+            .order_by("-opened_at")
+            .first()
+        )
+
+        if not shift:
+            return Response(
+                {"detail": "No open shift found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(CashShiftSerializer(shift).data)
