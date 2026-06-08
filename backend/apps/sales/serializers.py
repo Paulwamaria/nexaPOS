@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.branches.models import Branch
 from apps.inventory.models import Product
-from apps.sales.models import Sale, SaleItem, Payment
+from apps.sales.models import Sale, SaleItem, Payment, CashShift
 
 
 class CheckoutItemSerializer(serializers.Serializer):
@@ -115,3 +115,34 @@ class SaleDetailSerializer(serializers.ModelSerializer):
             "items",
             "payments",
         ]
+
+
+class CashShiftSerializer(serializers.ModelSerializer):
+    branch = serializers.CharField(source="branch.name", read_only=True)
+    cashier = serializers.CharField(source="cashier.full_name", read_only=True)
+
+    class Meta:
+        model = CashShift
+        fields = [
+            "id",
+            "branch",
+            "cashier",
+            "opening_cash",
+            "closing_cash",
+            "status",
+            "opened_at",
+            "closed_at",
+        ]
+
+
+class CashShiftOpenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CashShift
+        fields = [
+            "branch",
+            "opening_cash",
+        ]
+
+
+class CashShiftCloseSerializer(serializers.Serializer):
+    closing_cash = serializers.DecimalField(max_digits=12, decimal_places=2)

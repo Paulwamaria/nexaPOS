@@ -2,6 +2,8 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 from apps.branches.models import Branch
 from apps.inventory.models import Product
@@ -10,10 +12,13 @@ from apps.sales.serializers import (
     SaleResponseSerializer,
     SaleListSerializer,
     SaleDetailSerializer,
+    CashShiftSerializer,
+    CashShiftOpenSerializer,
+    CashShiftCloseSerializer,
 )
 from apps.sales.services import process_checkout
 from rest_framework.generics import ListAPIView, RetrieveAPIView
-from apps.sales.models import Sale
+from apps.sales.models import Sale, CashShift
 from apps.accounts.permissions import IsCashierOrAdmin
 
 
@@ -81,3 +86,79 @@ class SaleDetailAPIView(RetrieveAPIView):
         "items__product",
         "payments",
     )
+
+
+class CashShiftListAPIView(ListAPIView):
+    permission_classes = [IsCashierOrAdmin]
+    serializer_class = CashShiftSerializer
+
+    def get_queryset(self):
+        return CashShift.objects.select_related(
+            "branch",
+            "cashier",
+        ).order_by("-opened_at")
+
+
+class OpenCashShiftAPIView(APIView):
+    permission_classes = [IsCashierOrAdmin]
+
+    def post(self, request):
+        serializer = CashShiftOpenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        branch = serializer.validated_data["branch"]
+
+        existing_shift = CashShift.objects.filter(
+            cashier=request.user,
+            branch=branch,
+            status="OPEN",
+        ).first()
+
+        if existing_shift:
+            return Response(
+                {"detail": "You already have an open shift for this branch."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        shift = CashShift.objects.create(
+            branch=branch,
+            cashier=request.user,
+            opening_cash=serializer.validated_data["opening_cash"],
+        )
+
+        return Response(
+            CashShiftSerializer(shift).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class CloseCashShiftAPIView(APIView):
+    permission_classes = [IsCashierOrAdmin]
+
+    def post(self, request, pk):
+        serializer = CashShiftCloseSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        shift = get_object_or_404(CashShift, id=pk)
+
+        if shift.cashier != request.user and request.user.role not in [
+            "ADMIN",
+            "SUPERADMIN",
+        ]:
+            return Response(
+                {"detail": "You cannot close another cashier's shift."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if shift.status == "CLOSED":
+            return Response(
+                {"detail": "Shift is already closed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        shift.closing_cash = serializer.validated_data["closing_cash"]
+        shift.status = "CLOSED"
+        shift.closed_at = timezone.now()
+        shift.save()
+
+        return Response(CashShiftSerializer(shift).data)
