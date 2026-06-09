@@ -28,6 +28,10 @@ class AuditLog(models.Model):
         SHIFT_OPENED = "SHIFT_OPENED", "Shift Opened"
         SHIFT_CLOSED = "SHIFT_CLOSED", "Shift Closed"
 
+        SUPPLIER_CREATED = "SUPPLIER_CREATED", "Supplier Created"
+        PURCHASE_ORDER_CREATED = "PURCHASE_ORDER_CREATED", "Purchase Order Created"
+        PURCHASE_ORDER_RECEIVED = "PURCHASE_ORDER_RECEIVED", "Purchase Order Received"
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
