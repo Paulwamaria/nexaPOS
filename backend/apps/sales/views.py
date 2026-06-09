@@ -5,6 +5,8 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db.models import Sum
+from apps.audit.models import AuditLog
+from apps.audit.services import create_audit_log
 
 from apps.branches.models import Branch
 from apps.inventory.models import Product
@@ -129,6 +131,18 @@ class OpenCashShiftAPIView(APIView):
             opening_cash=serializer.validated_data["opening_cash"],
         )
 
+        create_audit_log(
+            user=request.user,
+            branch=shift.branch,
+            action=AuditLog.Action.SHIFT_OPENED,
+            entity_type="CashShift",
+            entity_id=shift.id,
+            description=f"Cash shift opened by {request.user.email}.",
+            metadata={
+                "opening_cash": str(shift.opening_cash),
+            },
+        )
+
         return Response(
             CashShiftSerializer(shift).data,
             status=status.HTTP_201_CREATED,
@@ -178,6 +192,20 @@ class CloseCashShiftAPIView(APIView):
         shift.closed_at = timezone.now()
         shift.save()
 
+        create_audit_log(
+            user=request.user,
+            branch=shift.branch,
+            action=AuditLog.Action.SHIFT_CLOSED,
+            entity_type="CashShift",
+            entity_id=shift.id,
+            description=f"Cash shift closed by {request.user.email}.",
+            metadata={
+                "opening_cash": str(shift.opening_cash),
+                "closing_cash": str(shift.closing_cash),
+                "expected_cash": str(shift.expected_cash),
+                "difference": str(shift.difference),
+            },
+        )
         return Response(CashShiftSerializer(shift).data)
 
 

@@ -1,6 +1,8 @@
 from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
+from apps.audit.services import create_audit_log
+from apps.audit.models import AuditLog
 
 from apps.inventory.models import BranchStock, StockMovement
 from apps.sales.models import (
@@ -122,6 +124,21 @@ def process_checkout(
             received_by=cashier,
         )
 
+    create_audit_log(
+        user=cashier,
+        branch=branch,
+        action=AuditLog.Action.SALE_CREATED,
+        entity_type="Sale",
+        entity_id=sale.id,
+        description=f"Sale {sale.sale_number} created.",
+        metadata={
+            "sale_number": sale.sale_number,
+            "sale_type": sale.sale_type,
+            "total_amount": str(sale.total_amount),
+            "items_count": sale.items.count(),
+        },
+    )
+
     return sale
 
 
@@ -196,4 +213,18 @@ def process_sale_return(*, sale, returned_by, reason="", items=None):
     sale_return.total_refund_amount = total_refund
     sale_return.save()
 
+    create_audit_log(
+        user=returned_by,
+        branch=sale.branch,
+        action=AuditLog.Action.SALE_RETURNED,
+        entity_type="SaleReturn",
+        entity_id=sale_return.id,
+        description=f"Return processed for sale {sale.sale_number}.",
+        metadata={
+            "sale_number": sale.sale_number,
+            "total_refund_amount": str(sale_return.total_refund_amount),
+            "items_count": sale_return.items.count(),
+            "reason": sale_return.reason,
+        },
+    )
     return sale_return

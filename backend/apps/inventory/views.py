@@ -1,6 +1,8 @@
 from django.db import models, transaction
 from django.db import transaction
 from rest_framework import status
+from apps.audit.models import AuditLog
+from apps.audit.services import create_audit_log
 from rest_framework.generics import (
     ListAPIView,
     ListCreateAPIView,
@@ -103,6 +105,21 @@ class StockAdjustmentAPIView(APIView):
             notes=data.get("notes", ""),
         )
 
+        create_audit_log(
+            user=request.user,
+            branch=branch,
+            action=AuditLog.Action.STOCK_ADJUSTED,
+            entity_type="StockMovement",
+            entity_id=movement.id,
+            description=f"{adjustment_type} for {product.name}.",
+            metadata={
+                "product_id": product.id,
+                "product_name": product.name,
+                "quantity": str(quantity),
+                "previous_quantity": str(previous_quantity),
+                "new_quantity": str(stock.quantity),
+            },
+        )
         return Response(
             {
                 "detail": "Stock adjusted successfully.",
