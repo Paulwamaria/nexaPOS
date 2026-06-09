@@ -94,7 +94,7 @@ class StockAdjustmentAPIView(APIView):
 
         stock.save()
 
-        StockMovement.objects.create(
+        movement = StockMovement.objects.create(
             branch=branch,
             product=product,
             movement_type=adjustment_type,
