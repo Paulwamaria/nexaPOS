@@ -25,10 +25,19 @@ export default function LoginPage() {
         password,
       });
 
-      saveTokens(response.data.access, response.data.refresh);
+      console.log("LOGIN RESPONSE:", response.data);
+
+      const { access, refresh } = response.data;
+
+      if (!access || !refresh) {
+        throw new Error("Missing tokens in login response");
+      }
+
+      saveTokens(access, refresh);
       router.push("/dashboard");
-    } catch {
-      setError("Invalid email or password.");
+    } catch (error) {
+      console.error("LOGIN ERROR:", error);
+      setError("Login succeeded but frontend failed. Check console.");
     } finally {
       setLoading(false);
     }
