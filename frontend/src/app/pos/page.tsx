@@ -25,6 +25,32 @@ type CartItem = {
   quantity: number;
 };
 
+type SaleReceipt = {
+  id: number;
+  sale_number: string;
+  sale_type: string;
+  subtotal: string;
+  total_amount: string;
+  created_at: string;
+  items: {
+    id: number;
+    product: string;
+    quantity: string;
+    unit_price: string;
+    total: string;
+  }[];
+  payments?: {
+    id: number;
+    payment_method: string;
+    amount: string;
+    reference: string;
+  }[];
+};
+
+function printReceipt() {
+  window.print();
+}
+
 export default function POSPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -34,6 +60,7 @@ export default function POSPage() {
   const [message, setMessage] = useState("");
   const [currentShift, setCurrentShift] = useState<CashShift | null>(null);
   const [openingCash, setOpeningCash] = useState("1000.00");
+  const [receipt, setReceipt] = useState<SaleReceipt | null>(null);
 
   useEffect(() => {
     async function loadPOS() {
@@ -102,7 +129,9 @@ export default function POSPage() {
           },
         ],
       });
+      const receiptRes = await api.get(`/sales/${response.data.id}/`);
 
+      setReceipt(receiptRes.data);
       setMessage(`Sale complete: ${response.data.sale_number}`);
       setCart([]);
       setCashAmount("");
@@ -255,6 +284,82 @@ export default function POSPage() {
           </div>
         </aside>
       </div>
+      {receipt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 print:static print:bg-white print:p-0">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 text-slate-950 shadow-2xl print:shadow-none print:rounded-none">
+            <div id="receipt-print-area">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold">NexaPOS</h2>
+                <p className="text-sm text-slate-500">Sales Receipt</p>
+              </div>
+
+              <div className="mt-5 border-y border-slate-200 py-3 text-sm">
+                <p>
+                  <strong>Receipt:</strong> {receipt.sale_number}
+                </p>
+                <p>
+                  <strong>Date:</strong>{" "}
+                  {new Date(receipt.created_at).toLocaleString()}
+                </p>
+                <p>
+                  <strong>Sale Type:</strong> {receipt.sale_type}
+                </p>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {receipt.items.map((item) => (
+                  <div key={item.id} className="flex justify-between text-sm">
+                    <div>
+                      <p className="font-medium">{item.product}</p>
+                      <p className="text-slate-500">
+                        {item.quantity} × KES {item.unit_price}
+                      </p>
+                    </div>
+                    <p className="font-semibold">KES {item.total}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5 border-t border-slate-200 pt-4">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total</span>
+                  <span>KES {receipt.total_amount}</span>
+                </div>
+
+                {receipt.payments?.map((payment) => (
+                  <div
+                    key={payment.id}
+                    className="mt-2 flex justify-between text-sm text-slate-600"
+                  >
+                    <span>{payment.payment_method}</span>
+                    <span>KES {payment.amount}</span>
+                  </div>
+                ))}
+              </div>
+
+              <p className="mt-6 text-center text-sm text-slate-500">
+                Thank you for shopping with us.
+              </p>
+            </div>
+
+            <div className="mt-6 flex gap-3 print:hidden">
+              <button
+                onClick={printReceipt}
+                className="flex-1 rounded-lg bg-slate-950 px-4 py-3 font-semibold text-white"
+              >
+                Print
+              </button>
+
+              <button
+                onClick={() => setReceipt(null)}
+                className="flex-1 rounded-lg border border-slate-300 px-4 py-3 font-semibold"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
