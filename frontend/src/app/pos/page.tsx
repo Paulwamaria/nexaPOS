@@ -12,6 +12,14 @@ type Product = {
   wholesale_price: string;
 };
 
+type CashShift = {
+  id: number;
+  branch: string;
+  cashier: string;
+  opening_cash: string;
+  status: string;
+};
+
 type CartItem = {
   product: Product;
   quantity: number;
@@ -24,14 +32,23 @@ export default function POSPage() {
   const [saleType, setSaleType] = useState<"RETAIL" | "WHOLESALE">("RETAIL");
   const [cashAmount, setCashAmount] = useState("");
   const [message, setMessage] = useState("");
+  const [currentShift, setCurrentShift] = useState<CashShift | null>(null);
+  const [openingCash, setOpeningCash] = useState("1000.00");
 
   useEffect(() => {
-    async function loadProducts() {
-      const res = await api.get("/inventory/products/");
-      setProducts(res.data);
+    async function loadPOS() {
+      const productsRes = await api.get("/inventory/products/");
+      setProducts(productsRes.data);
+
+      try {
+        const shiftRes = await api.get("/sales/shifts/current/");
+        setCurrentShift(shiftRes.data);
+      } catch {
+        setCurrentShift(null);
+      }
     }
 
-    loadProducts();
+    loadPOS();
   }, []);
 
   const total = useMemo(() => {
@@ -94,6 +111,22 @@ export default function POSPage() {
     }
   }
 
+  async function openShift() {
+    setMessage("");
+
+    try {
+      const res = await api.post("/sales/shifts/open/", {
+        branch: branchId,
+        opening_cash: openingCash,
+      });
+
+      setCurrentShift(res.data);
+      setMessage("Shift opened successfully.");
+    } catch (error: any) {
+      setMessage(error?.response?.data?.detail || "Failed to open shift.");
+    }
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 text-white p-6">
       <div className="mb-6">
@@ -105,6 +138,33 @@ export default function POSPage() {
         <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-4">
           {message}
         </div>
+      )}
+
+      {!currentShift && (
+        <section className="mb-6 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-5">
+          <h2 className="text-xl font-semibold text-yellow-200">
+            Open Cash Shift Required
+          </h2>
+          <p className="mt-2 text-sm text-yellow-100/80">
+            You must open a cash shift before processing sales.
+          </p>
+
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <input
+              className="rounded-lg border border-white/10 bg-slate-900 px-4 py-3 outline-none focus:border-emerald-400"
+              value={openingCash}
+              onChange={(e) => setOpeningCash(e.target.value)}
+              placeholder="Opening cash"
+            />
+
+            <button
+              onClick={openShift}
+              className="rounded-lg bg-emerald-500 px-5 py-3 font-semibold text-slate-950 hover:bg-emerald-400"
+            >
+              Open Shift
+            </button>
+          </div>
+        </section>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
@@ -148,10 +208,10 @@ export default function POSPage() {
           <h2 className="text-xl font-semibold">Cart</h2>
 
           <div className="mt-4 space-y-3">
+            disabled={cart.length === 0 || !currentShift}
             {cart.length === 0 && (
               <p className="text-sm text-slate-400">No items added yet.</p>
             )}
-
             {cart.map((item) => (
               <div
                 key={item.product.id}
@@ -190,7 +250,7 @@ export default function POSPage() {
               disabled={cart.length === 0}
               className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
             >
-              Complete Sale
+              {currentShift ? "Complete Sale" : "Open Shift First"}
             </button>
           </div>
         </aside>

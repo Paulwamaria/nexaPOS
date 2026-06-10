@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import { saveTokens } from "@/lib/auth";
+import { logout, saveTokens } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,24 +25,41 @@ export default function LoginPage() {
         password,
       });
 
-      console.log("LOGIN RESPONSE:", response.data);
-
       const { access, refresh } = response.data;
 
       if (!access || !refresh) {
-        throw new Error("Missing tokens in login response");
+        throw new Error("Missing tokens");
       }
 
       saveTokens(access, refresh);
+
+      const me = await api.get("/auth/me/");
+      const role = me.data.role;
+
+      if (role === "CASHIER") {
+        router.push("/pos");
+        return;
+      }
+
+      if (role === "STORE_KEEPER") {
+        router.push("/inventory");
+        return;
+      }
+
       router.push("/dashboard");
-    } catch (error) {
-      console.error("LOGIN ERROR:", error);
-      setError("Login succeeded but frontend failed. Check console.");
+    } catch (error: any) {
+      console.error("Login error:", error);
+
+      if (error?.response?.status === 401) {
+        setError("Invalid email or password.");
+        return;
+      }
+
+      setError("Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
   }
-
   return (
     <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-4">
       <form

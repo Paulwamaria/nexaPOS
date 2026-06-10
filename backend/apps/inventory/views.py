@@ -139,7 +139,10 @@ class CategoryListCreateAPIView(ListCreateAPIView):
 
 
 class ProductListCreateAPIView(ListCreateAPIView):
-    permission_classes = [IsStoreKeeperOrAdmin]
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [IsAuthenticated()]
+        return [IsStoreKeeperOrAdmin()]
 
     def get_queryset(self):
         return Product.objects.select_related("category").order_by("name")
