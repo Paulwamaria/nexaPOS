@@ -3,7 +3,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
-
+import { AppShell } from "@/components/AppShell";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 type Product = {
   id: number;
   name: string;
@@ -155,211 +156,224 @@ export default function POSPage() {
       setMessage(error?.response?.data?.detail || "Failed to open shift.");
     }
   }
+  const { user, loadingUser } = useCurrentUser();
+
+  if (loadingUser) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        Loading...
+      </main>
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white p-6">
-      <div className="mb-6">
-        <p className="text-emerald-400 text-sm font-medium">NexaPOS</p>
-        <h1 className="text-3xl font-bold mt-2">POS Terminal</h1>
-      </div>
-
-      {message && (
-        <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-4">
-          {message}
+    <AppShell user={user}>
+      <main className="min-h-screen bg-slate-950 text-white p-6">
+        <div className="mb-6">
+          <p className="text-emerald-400 text-sm font-medium">NexaPOS</p>
+          <h1 className="text-3xl font-bold mt-2">POS Terminal</h1>
         </div>
-      )}
 
-      {!currentShift && (
-        <section className="mb-6 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-5">
-          <h2 className="text-xl font-semibold text-yellow-200">
-            Open Cash Shift Required
-          </h2>
-          <p className="mt-2 text-sm text-yellow-100/80">
-            You must open a cash shift before processing sales.
-          </p>
-
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <input
-              className="rounded-lg border border-white/10 bg-slate-900 px-4 py-3 outline-none focus:border-emerald-400"
-              value={openingCash}
-              onChange={(e) => setOpeningCash(e.target.value)}
-              placeholder="Opening cash"
-            />
-
-            <button
-              onClick={openShift}
-              className="rounded-lg bg-emerald-500 px-5 py-3 font-semibold text-slate-950 hover:bg-emerald-400"
-            >
-              Open Shift
-            </button>
+        {message && (
+          <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-4">
+            {message}
           </div>
-        </section>
-      )}
+        )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Products</h2>
+        {!currentShift && (
+          <section className="mb-6 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-5">
+            <h2 className="text-xl font-semibold text-yellow-200">
+              Open Cash Shift Required
+            </h2>
+            <p className="mt-2 text-sm text-yellow-100/80">
+              You must open a cash shift before processing sales.
+            </p>
 
-            <select
-              value={saleType}
-              onChange={(e) =>
-                setSaleType(e.target.value as "RETAIL" | "WHOLESALE")
-              }
-              className="rounded-lg bg-slate-900 border border-white/10 px-3 py-2"
-            >
-              <option value="RETAIL">Retail</option>
-              <option value="WHOLESALE">Wholesale</option>
-            </select>
-          </div>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+              <input
+                className="rounded-lg border border-white/10 bg-slate-900 px-4 py-3 outline-none focus:border-emerald-400"
+                value={openingCash}
+                onChange={(e) => setOpeningCash(e.target.value)}
+                placeholder="Opening cash"
+              />
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {products.map((product) => (
               <button
-                key={product.id}
-                onClick={() => addToCart(product)}
-                className="rounded-xl border border-white/10 bg-slate-900 p-4 text-left hover:border-emerald-400"
+                onClick={openShift}
+                className="rounded-lg bg-emerald-500 px-5 py-3 font-semibold text-slate-950 hover:bg-emerald-400"
               >
-                <p className="font-semibold">{product.name}</p>
-                <p className="text-sm text-slate-400">{product.sku}</p>
-                <p className="mt-3 text-emerald-400">
-                  KES{" "}
-                  {saleType === "WHOLESALE"
-                    ? product.wholesale_price
-                    : product.retail_price}
-                </p>
+                Open Shift
               </button>
-            ))}
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
 
-        <aside className="rounded-2xl border border-white/10 bg-white/5 p-5">
-          <h2 className="text-xl font-semibold">Cart</h2>
+        <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
+          <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Products</h2>
 
-          <div className="mt-4 space-y-3">
-            disabled={cart.length === 0 || !currentShift}
-            {cart.length === 0 && (
-              <p className="text-sm text-slate-400">No items added yet.</p>
-            )}
-            {cart.map((item) => (
-              <div
-                key={item.product.id}
-                className="flex items-center justify-between rounded-xl bg-slate-900 p-3"
+              <select
+                value={saleType}
+                onChange={(e) =>
+                  setSaleType(e.target.value as "RETAIL" | "WHOLESALE")
+                }
+                className="rounded-lg bg-slate-900 border border-white/10 px-3 py-2"
               >
-                <div>
-                  <p className="font-medium">{item.product.name}</p>
-                  <p className="text-sm text-slate-400">Qty: {item.quantity}</p>
+                <option value="RETAIL">Retail</option>
+                <option value="WHOLESALE">Wholesale</option>
+              </select>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {products.map((product) => (
+                <button
+                  key={product.id}
+                  onClick={() => addToCart(product)}
+                  className="rounded-xl border border-white/10 bg-slate-900 p-4 text-left hover:border-emerald-400"
+                >
+                  <p className="font-semibold">{product.name}</p>
+                  <p className="text-sm text-slate-400">{product.sku}</p>
+                  <p className="mt-3 text-emerald-400">
+                    KES{" "}
+                    {saleType === "WHOLESALE"
+                      ? product.wholesale_price
+                      : product.retail_price}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <aside className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <h2 className="text-xl font-semibold">Cart</h2>
+
+            <div className="mt-4 space-y-3">
+              disabled={cart.length === 0 || !currentShift}
+              {cart.length === 0 && (
+                <p className="text-sm text-slate-400">No items added yet.</p>
+              )}
+              {cart.map((item) => (
+                <div
+                  key={item.product.id}
+                  className="flex items-center justify-between rounded-xl bg-slate-900 p-3"
+                >
+                  <div>
+                    <p className="font-medium">{item.product.name}</p>
+                    <p className="text-sm text-slate-400">
+                      Qty: {item.quantity}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => removeFromCart(item.product.id)}
+                    className="text-sm text-red-300"
+                  >
+                    Remove
+                  </button>
                 </div>
+              ))}
+            </div>
+
+            <div className="mt-6 border-t border-white/10 pt-4">
+              <div className="flex justify-between text-lg font-bold">
+                <span>Total</span>
+                <span>KES {total.toFixed(2)}</span>
+              </div>
+
+              <input
+                className="mt-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3 outline-none focus:border-emerald-400"
+                placeholder="Cash received"
+                value={cashAmount}
+                onChange={(e) => setCashAmount(e.target.value)}
+              />
+
+              <button
+                onClick={checkout}
+                disabled={cart.length === 0}
+                className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+              >
+                {currentShift ? "Complete Sale" : "Open Shift First"}
+              </button>
+            </div>
+          </aside>
+        </div>
+        {receipt && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 print:static print:bg-white print:p-0">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 text-slate-950 shadow-2xl print:shadow-none print:rounded-none">
+              <div id="receipt-print-area">
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold">NexaPOS</h2>
+                  <p className="text-sm text-slate-500">Sales Receipt</p>
+                </div>
+
+                <div className="mt-5 border-y border-slate-200 py-3 text-sm">
+                  <p>
+                    <strong>Receipt:</strong> {receipt.sale_number}
+                  </p>
+                  <p>
+                    <strong>Date:</strong>{" "}
+                    {new Date(receipt.created_at).toLocaleString()}
+                  </p>
+                  <p>
+                    <strong>Sale Type:</strong> {receipt.sale_type}
+                  </p>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {receipt.items.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <div>
+                        <p className="font-medium">{item.product}</p>
+                        <p className="text-slate-500">
+                          {item.quantity} × KES {item.unit_price}
+                        </p>
+                      </div>
+                      <p className="font-semibold">KES {item.total}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-5 border-t border-slate-200 pt-4">
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>Total</span>
+                    <span>KES {receipt.total_amount}</span>
+                  </div>
+
+                  {receipt.payments?.map((payment) => (
+                    <div
+                      key={payment.id}
+                      className="mt-2 flex justify-between text-sm text-slate-600"
+                    >
+                      <span>{payment.payment_method}</span>
+                      <span>KES {payment.amount}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="mt-6 text-center text-sm text-slate-500">
+                  Thank you for shopping with us.
+                </p>
+              </div>
+
+              <div className="mt-6 flex gap-3 print:hidden">
+                <button
+                  onClick={printReceipt}
+                  className="flex-1 rounded-lg bg-slate-950 px-4 py-3 font-semibold text-white"
+                >
+                  Print
+                </button>
 
                 <button
-                  onClick={() => removeFromCart(item.product.id)}
-                  className="text-sm text-red-300"
+                  onClick={() => setReceipt(null)}
+                  className="flex-1 rounded-lg border border-slate-300 px-4 py-3 font-semibold"
                 >
-                  Remove
+                  Close
                 </button>
               </div>
-            ))}
-          </div>
-
-          <div className="mt-6 border-t border-white/10 pt-4">
-            <div className="flex justify-between text-lg font-bold">
-              <span>Total</span>
-              <span>KES {total.toFixed(2)}</span>
-            </div>
-
-            <input
-              className="mt-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3 outline-none focus:border-emerald-400"
-              placeholder="Cash received"
-              value={cashAmount}
-              onChange={(e) => setCashAmount(e.target.value)}
-            />
-
-            <button
-              onClick={checkout}
-              disabled={cart.length === 0}
-              className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
-            >
-              {currentShift ? "Complete Sale" : "Open Shift First"}
-            </button>
-          </div>
-        </aside>
-      </div>
-      {receipt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 print:static print:bg-white print:p-0">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 text-slate-950 shadow-2xl print:shadow-none print:rounded-none">
-            <div id="receipt-print-area">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold">NexaPOS</h2>
-                <p className="text-sm text-slate-500">Sales Receipt</p>
-              </div>
-
-              <div className="mt-5 border-y border-slate-200 py-3 text-sm">
-                <p>
-                  <strong>Receipt:</strong> {receipt.sale_number}
-                </p>
-                <p>
-                  <strong>Date:</strong>{" "}
-                  {new Date(receipt.created_at).toLocaleString()}
-                </p>
-                <p>
-                  <strong>Sale Type:</strong> {receipt.sale_type}
-                </p>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                {receipt.items.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <div>
-                      <p className="font-medium">{item.product}</p>
-                      <p className="text-slate-500">
-                        {item.quantity} × KES {item.unit_price}
-                      </p>
-                    </div>
-                    <p className="font-semibold">KES {item.total}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 border-t border-slate-200 pt-4">
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
-                  <span>KES {receipt.total_amount}</span>
-                </div>
-
-                {receipt.payments?.map((payment) => (
-                  <div
-                    key={payment.id}
-                    className="mt-2 flex justify-between text-sm text-slate-600"
-                  >
-                    <span>{payment.payment_method}</span>
-                    <span>KES {payment.amount}</span>
-                  </div>
-                ))}
-              </div>
-
-              <p className="mt-6 text-center text-sm text-slate-500">
-                Thank you for shopping with us.
-              </p>
-            </div>
-
-            <div className="mt-6 flex gap-3 print:hidden">
-              <button
-                onClick={printReceipt}
-                className="flex-1 rounded-lg bg-slate-950 px-4 py-3 font-semibold text-white"
-              >
-                Print
-              </button>
-
-              <button
-                onClick={() => setReceipt(null)}
-                className="flex-1 rounded-lg border border-slate-300 px-4 py-3 font-semibold"
-              >
-                Close
-              </button>
             </div>
           </div>
-        </div>
-      )}
-    </main>
+        )}
+      </main>
+    </AppShell>
   );
 }

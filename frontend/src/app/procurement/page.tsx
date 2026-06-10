@@ -3,6 +3,8 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { AppShell } from "@/components/AppShell";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type Supplier = {
   id: number;
@@ -144,154 +146,165 @@ export default function ProcurementPage() {
     }
   }
 
+  const { user, loadingUser } = useCurrentUser();
+
+  if (loadingUser) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        Loading...
+      </main>
+    );
+  }
   return (
-    <main className="min-h-screen bg-slate-950 text-white p-6">
-      <div className="mb-8">
-        <p className="text-emerald-400 text-sm font-medium">NexaPOS</p>
-        <h1 className="text-3xl font-bold mt-2">Procurement</h1>
-        <p className="mt-1 text-slate-400">
-          Manage suppliers, purchase orders, and goods receiving.
-        </p>
-      </div>
-
-      {message && (
-        <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-4">
-          {message}
+    <AppShell user={user}>
+      <main className="min-h-screen bg-slate-950 text-white p-6">
+        <div className="mb-8">
+          <p className="text-emerald-400 text-sm font-medium">NexaPOS</p>
+          <h1 className="text-3xl font-bold mt-2">Procurement</h1>
+          <p className="mt-1 text-slate-400">
+            Manage suppliers, purchase orders, and goods receiving.
+          </p>
         </div>
-      )}
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        <form
-          onSubmit={createSupplier}
-          className="rounded-2xl border border-white/10 bg-white/5 p-5"
-        >
-          <h2 className="text-xl font-semibold">Create Supplier</h2>
+        {message && (
+          <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-4">
+            {message}
+          </div>
+        )}
 
-          <input
-            required
-            className="mt-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-            placeholder="Supplier name"
-            value={supplierName}
-            onChange={(e) => setSupplierName(e.target.value)}
-          />
-
-          <input
-            className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-            placeholder="Phone"
-            value={supplierPhone}
-            onChange={(e) => setSupplierPhone(e.target.value)}
-          />
-
-          <input
-            className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-            placeholder="Email"
-            value={supplierEmail}
-            onChange={(e) => setSupplierEmail(e.target.value)}
-          />
-
-          <button className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400">
-            Save Supplier
-          </button>
-        </form>
-
-        <form
-          onSubmit={createPurchaseOrder}
-          className="rounded-2xl border border-white/10 bg-white/5 p-5"
-        >
-          <h2 className="text-xl font-semibold">Create Purchase Order</h2>
-
-          <select
-            required
-            className="mt-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-            value={selectedSupplierId}
-            onChange={(e) => setSelectedSupplierId(e.target.value)}
+        <section className="grid gap-6 xl:grid-cols-2">
+          <form
+            onSubmit={createSupplier}
+            className="rounded-2xl border border-white/10 bg-white/5 p-5"
           >
-            <option value="">Select supplier</option>
-            {suppliers.map((supplier) => (
-              <option key={supplier.id} value={supplier.id}>
-                {supplier.name}
-              </option>
-            ))}
-          </select>
+            <h2 className="text-xl font-semibold">Create Supplier</h2>
 
-          <select
-            required
-            className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-            value={selectedProductId}
-            onChange={(e) => setSelectedProductId(e.target.value)}
+            <input
+              required
+              className="mt-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              placeholder="Supplier name"
+              value={supplierName}
+              onChange={(e) => setSupplierName(e.target.value)}
+            />
+
+            <input
+              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              placeholder="Phone"
+              value={supplierPhone}
+              onChange={(e) => setSupplierPhone(e.target.value)}
+            />
+
+            <input
+              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              placeholder="Email"
+              value={supplierEmail}
+              onChange={(e) => setSupplierEmail(e.target.value)}
+            />
+
+            <button className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400">
+              Save Supplier
+            </button>
+          </form>
+
+          <form
+            onSubmit={createPurchaseOrder}
+            className="rounded-2xl border border-white/10 bg-white/5 p-5"
           >
-            <option value="">Select product</option>
-            {products.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name} — {product.sku}
-              </option>
-            ))}
-          </select>
+            <h2 className="text-xl font-semibold">Create Purchase Order</h2>
 
-          <input
-            required
-            className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-            placeholder="Quantity ordered"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-          />
-
-          <input
-            required
-            className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-            placeholder="Cost price"
-            value={costPrice}
-            onChange={(e) => setCostPrice(e.target.value)}
-          />
-
-          <button className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400">
-            Create Purchase Order
-          </button>
-        </form>
-      </section>
-
-      <section className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5">
-        <h2 className="text-xl font-semibold">Purchase Orders</h2>
-
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="text-slate-400">
-              <tr className="border-b border-white/10">
-                <th className="py-3">Order</th>
-                <th className="py-3">Supplier</th>
-                <th className="py-3">Branch</th>
-                <th className="py-3">Status</th>
-                <th className="py-3">Total</th>
-                <th className="py-3">Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {purchaseOrders.map((po) => (
-                <tr key={po.id} className="border-b border-white/5">
-                  <td className="py-3 font-medium">{po.order_number}</td>
-                  <td className="py-3 text-slate-400">{po.supplier}</td>
-                  <td className="py-3 text-slate-400">{po.branch}</td>
-                  <td className="py-3">{po.status}</td>
-                  <td className="py-3">KES {po.total_amount}</td>
-                  <td className="py-3">
-                    {po.status !== "RECEIVED" ? (
-                      <button
-                        onClick={() => receivePurchaseOrder(po.id)}
-                        className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950"
-                      >
-                        Receive
-                      </button>
-                    ) : (
-                      <span className="text-slate-500">Received</span>
-                    )}
-                  </td>
-                </tr>
+            <select
+              required
+              className="mt-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              value={selectedSupplierId}
+              onChange={(e) => setSelectedSupplierId(e.target.value)}
+            >
+              <option value="">Select supplier</option>
+              {suppliers.map((supplier) => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                </option>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
+            </select>
+
+            <select
+              required
+              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              value={selectedProductId}
+              onChange={(e) => setSelectedProductId(e.target.value)}
+            >
+              <option value="">Select product</option>
+              {products.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.name} — {product.sku}
+                </option>
+              ))}
+            </select>
+
+            <input
+              required
+              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              placeholder="Quantity ordered"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+            />
+
+            <input
+              required
+              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              placeholder="Cost price"
+              value={costPrice}
+              onChange={(e) => setCostPrice(e.target.value)}
+            />
+
+            <button className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400">
+              Create Purchase Order
+            </button>
+          </form>
+        </section>
+
+        <section className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5">
+          <h2 className="text-xl font-semibold">Purchase Orders</h2>
+
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="text-slate-400">
+                <tr className="border-b border-white/10">
+                  <th className="py-3">Order</th>
+                  <th className="py-3">Supplier</th>
+                  <th className="py-3">Branch</th>
+                  <th className="py-3">Status</th>
+                  <th className="py-3">Total</th>
+                  <th className="py-3">Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {purchaseOrders.map((po) => (
+                  <tr key={po.id} className="border-b border-white/5">
+                    <td className="py-3 font-medium">{po.order_number}</td>
+                    <td className="py-3 text-slate-400">{po.supplier}</td>
+                    <td className="py-3 text-slate-400">{po.branch}</td>
+                    <td className="py-3">{po.status}</td>
+                    <td className="py-3">KES {po.total_amount}</td>
+                    <td className="py-3">
+                      {po.status !== "RECEIVED" ? (
+                        <button
+                          onClick={() => receivePurchaseOrder(po.id)}
+                          className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950"
+                        >
+                          Receive
+                        </button>
+                      ) : (
+                        <span className="text-slate-500">Received</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </AppShell>
   );
 }

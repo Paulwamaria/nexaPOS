@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { BarChart3, Boxes, LogOut, Receipt, Wallet } from "lucide-react";
 import { api } from "@/lib/api";
 import { logout } from "@/lib/auth";
-
+import { AppShell } from "@/components/AppShell";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 type User = {
   id: number;
   email: string;
@@ -65,66 +66,68 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white p-6">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <p className="text-emerald-400 text-sm font-medium">NexaPOS</p>
-          <h1 className="text-3xl font-bold mt-2">Dashboard</h1>
-          <p className="text-slate-400 mt-1">
-            Welcome back, {user?.full_name} · {user?.role}
-          </p>
+    <AppShell user={user}>
+      <main className="min-h-screen bg-slate-950 text-white p-6">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <p className="text-emerald-400 text-sm font-medium">NexaPOS</p>
+            <h1 className="text-3xl font-bold mt-2">Dashboard</h1>
+            <p className="text-slate-400 mt-1">
+              Welcome back, {user?.full_name} · {user?.role}
+            </p>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
         </div>
 
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
-        >
-          <LogOut size={16} />
-          Logout
-        </button>
-      </div>
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <DashboardCard
+            title="Today's Sales"
+            value={`KES ${report?.total_sales ?? "0.00"}`}
+            subtitle={`${report?.sales_count ?? 0} sales`}
+            icon={<Receipt />}
+          />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardCard
-          title="Today's Sales"
-          value={`KES ${report?.total_sales ?? "0.00"}`}
-          subtitle={`${report?.sales_count ?? 0} sales`}
-          icon={<Receipt />}
-        />
+          <DashboardCard
+            title="Gross Profit"
+            value={`KES ${report?.gross_profit ?? "0.00"}`}
+            subtitle="Before expenses"
+            icon={<BarChart3 />}
+          />
 
-        <DashboardCard
-          title="Gross Profit"
-          value={`KES ${report?.gross_profit ?? "0.00"}`}
-          subtitle="Before expenses"
-          icon={<BarChart3 />}
-        />
+          <DashboardCard
+            title="Expenses"
+            value={`KES ${report?.total_expenses ?? "0.00"}`}
+            subtitle="Today"
+            icon={<Wallet />}
+          />
 
-        <DashboardCard
-          title="Expenses"
-          value={`KES ${report?.total_expenses ?? "0.00"}`}
-          subtitle="Today"
-          icon={<Wallet />}
-        />
+          <DashboardCard
+            title="Low Stock"
+            value={`${report?.low_stock_count ?? 0}`}
+            subtitle="Items need attention"
+            icon={<Boxes />}
+          />
+        </section>
 
-        <DashboardCard
-          title="Low Stock"
-          value={`${report?.low_stock_count ?? 0}`}
-          subtitle="Items need attention"
-          icon={<Boxes />}
-        />
-      </section>
+        <section className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6">
+          <h2 className="text-xl font-semibold">Quick Actions</h2>
 
-      <section className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6">
-        <h2 className="text-xl font-semibold">Quick Actions</h2>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-4">
-          <QuickAction label="Open POS" href="/pos" />
-          <QuickAction label="Inventory" href="/inventory" />
-          <QuickAction label="Sales" href="/sales" />
-          <QuickAction label="Reports" href="/reports" />
-        </div>
-      </section>
-    </main>
+          <div className="mt-4 grid gap-3 md:grid-cols-4">
+            <QuickAction label="Open POS" href="/pos" />
+            <QuickAction label="Inventory" href="/inventory" />
+            <QuickAction label="Sales" href="/sales" />
+            <QuickAction label="Reports" href="/reports" />
+          </div>
+        </section>
+      </main>
+    </AppShell>
   );
 }
 
