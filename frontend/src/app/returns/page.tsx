@@ -125,23 +125,30 @@ export default function ReturnsPage() {
             <h2 className="text-xl font-semibold">Recent Sales</h2>
 
             <div className="mt-4 space-y-3">
-              {sales.map((sale) => (
-                <button
-                  key={sale.id}
-                  onClick={() => loadSaleDetail(String(sale.id))}
-                  className={`w-full rounded-xl border p-4 text-left ${
-                    selectedSaleId === String(sale.id)
-                      ? "border-emerald-400 bg-emerald-500/10"
-                      : "border-white/10 bg-slate-900 hover:border-emerald-400"
-                  }`}
-                >
-                  <p className="font-semibold">{sale.sale_number}</p>
-                  <p className="text-sm text-slate-400">
-                    KES {sale.total_amount} ·{" "}
-                    {new Date(sale.created_at).toLocaleString()}
-                  </p>
-                </button>
-              ))}
+              {sales.length === 0 ? (
+                <EmptyState
+                  title="No sales found"
+                  description="Completed sales will appear here after checkout."
+                />
+              ) : (
+                sales.map((sale) => (
+                  <button
+                    key={sale.id}
+                    onClick={() => loadSaleDetail(String(sale.id))}
+                    className={`w-full rounded-xl border p-4 text-left ${
+                      selectedSaleId === String(sale.id)
+                        ? "border-emerald-400 bg-emerald-500/10"
+                        : "border-white/10 bg-slate-900 hover:border-emerald-400"
+                    }`}
+                  >
+                    <p className="font-semibold">{sale.sale_number}</p>
+                    <p className="text-sm text-slate-400">
+                      KES {sale.total_amount} ·{" "}
+                      {new Date(sale.created_at).toLocaleString()}
+                    </p>
+                  </button>
+                ))
+              )}
             </div>
           </div>
 
