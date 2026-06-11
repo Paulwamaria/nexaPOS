@@ -6,15 +6,20 @@ import { BarChart3, Boxes, LogOut, Receipt, Wallet } from "lucide-react";
 import { api } from "@/lib/api";
 import { logout } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { PageHeader } from "@/components/PageHeader";
 import { AlertMessage } from "@/components/AlertMessage";
-import { EmptyState } from "@/components/EmptyState";
 type User = {
   id: number;
   email: string;
   full_name: string;
   role: string;
+};
+type SaleReturn = {
+  id: number;
+  sale_number: string;
+  total_refund_amount: string;
+  refund_risk_level: string;
+  manager_reviewed: boolean;
 };
 
 type DashboardReport = {
@@ -33,17 +38,27 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [report, setReport] = useState<DashboardReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [riskyReturns, setRiskyReturns] = useState<SaleReturn[]>([]);
 
   useEffect(() => {
     async function loadDashboard() {
       try {
-        const [meRes, reportRes] = await Promise.all([
+        const [meRes, reportRes, returnsRes] = await Promise.all([
           api.get("/auth/me/"),
           api.get("/reports/dashboard/"),
+          api.get("/sales/returns/"),
         ]);
 
         setUser(meRes.data);
         setReport(reportRes.data);
+
+        setRiskyReturns(
+          returnsRes.data.filter(
+            (item: SaleReturn) =>
+              !item.manager_reviewed &&
+              ["MEDIUM", "HIGH"].includes(item.refund_risk_level),
+          ),
+        );
       } catch {
         logout();
         router.push("/login");
@@ -128,6 +143,25 @@ export default function DashboardPage() {
             <QuickAction label="Reports" href="/reports" />
           </div>
         </section>
+        {riskyReturns.length > 0 && (
+          <section className="mt-8 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-5">
+            <h2 className="text-xl font-semibold text-yellow-200">
+              Returns Need Review
+            </h2>
+
+            <p className="mt-1 text-sm text-yellow-100/80">
+              {riskyReturns.length} medium/high-risk return(s) have not been
+              reviewed.
+            </p>
+
+            <button
+              onClick={() => router.push("/return-reviews")}
+              className="mt-4 rounded-lg bg-yellow-300 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-yellow-200"
+            >
+              Review Returns
+            </button>
+          </section>
+        )}
       </main>
     </AppShell>
   );
