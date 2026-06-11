@@ -123,14 +123,16 @@ export default function POSPage() {
     setBarcode(value);
 
     const product = products.find(
-      (p) => p.sku.toLowerCase() === value.toLowerCase(),
+      (item) =>
+        item.sku.toLowerCase() === value.toLowerCase() ||
+        item.name.toLowerCase() === value.toLowerCase(),
     );
 
     if (!product) return;
 
     addToCart(product);
-
     setBarcode("");
+    setMessage(`Added ${product.name} to cart.`);
   }
 
   function addToCart(product: Product) {
@@ -260,7 +262,7 @@ export default function POSPage() {
               value={barcode}
               onChange={(e) => handleBarcodeScan(e.target.value)}
               className="mb-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3 outline-none focus:border-emerald-400"
-              placeholder="Scan or enter barcode..."
+              placeholder="Scan barcode or enter SKU..."
             />
             <input
               className="mb-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3 outline-none focus:border-emerald-400"
