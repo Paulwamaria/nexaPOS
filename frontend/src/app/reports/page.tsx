@@ -31,6 +31,27 @@ export default function ReportsPage() {
   const [endDate, setEndDate] = useState("");
   const [loadingReports, setLoadingReports] = useState(false);
 
+  async function downloadCSV(endpoint: string, filename: string) {
+    try {
+      const response = await api.get(endpoint, {
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setMessage("Failed to download CSV export.");
+    }
+  }
+
   async function loadReports() {
     try {
       const params = new URLSearchParams();
@@ -89,6 +110,66 @@ export default function ReportsPage() {
         />
 
         <AlertMessage message={message} tone="error" />
+
+        {/* Export CSVs for sales, inventory, procurement, and audit logs to analyze data in spreadsheets or accounting software. Use date filters to view specific time periods and identify trends. */}
+        <section className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-white">CSV Exports</h2>
+              <p className="text-sm text-slate-400">
+                Download operational data for accounting and management review.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() =>
+                  downloadCSV("/reports/exports/sales.csv", "sales_export.csv")
+                }
+                className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+              >
+                Sales CSV
+              </button>
+
+              <button
+                onClick={() =>
+                  downloadCSV(
+                    "/reports/exports/inventory.csv",
+                    "inventory_export.csv",
+                  )
+                }
+                className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+              >
+                Inventory CSV
+              </button>
+
+              <button
+                onClick={() =>
+                  downloadCSV(
+                    "/reports/exports/procurement.csv",
+                    "procurement_export.csv",
+                  )
+                }
+                className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+              >
+                Procurement CSV
+              </button>
+
+              <button
+                onClick={() =>
+                  downloadCSV(
+                    "/reports/exports/audit-logs.csv",
+                    "audit_logs_export.csv",
+                  )
+                }
+                className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+              >
+                Audit Logs CSV
+              </button>
+            </div>
+          </div>
+        </section>
+        {/* filter reports by date range and export CSVs for deeper analysis. */}
         <section className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-5">
           <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
             <div>
