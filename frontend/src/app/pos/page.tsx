@@ -16,6 +16,14 @@ type Product = {
   wholesale_price: string;
 };
 
+type StockItem = {
+  id: number;
+  branch: string;
+  product: Product;
+  quantity: string;
+  reorder_level: number;
+};
+
 type CashShift = {
   id: number;
   branch: string;
@@ -86,26 +94,35 @@ export default function POSPage() {
   const [checkingOut, setCheckingOut] = useState(false);
   const [productSearch, setProductSearch] = useState("");
   const [barcode, setBarcode] = useState("");
+  const [closingCash, setClosingCash] = useState("");
+  const [closingShift, setClosingShift] = useState(false);
+  const [stockItems, setStockItems] = useState<StockItem[]>([]);
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
 
-  useEffect(() => {
-    async function loadPOS() {
-      const productsRes = await api.get("/inventory/products/");
-      setProducts(productsRes.data);
-      const customersRes = await api.get("/sales/customers/");
-      setCustomers(customersRes.data);
-      try {
-        const shiftRes = await api.get(
-          `/sales/shifts/current/?branch_id=${branchId}`,
-        );
-        setCurrentShift(shiftRes.data);
-      } catch {
-        setCurrentShift(null);
-      }
+  async function loadPOS() {
+    const stocksRes = await api.get(`/inventory/stocks/?branch_id=${branchId}`);
+    setStockItems(stocksRes.data);
+
+    try {
+      const shiftRes = await api.get(
+        `/sales/shifts/current/?branch_id=${branchId}`,
+      );
+      setCurrentShift(shiftRes.data);
+    } catch {
+      setCurrentShift(null);
     }
 
+    try {
+      const customersRes = await api.get("/sales/customers/");
+      setCustomers(customersRes.data);
+    } catch {
+      setCustomers([]);
+    }
+  }
+
+  useEffect(() => {
     loadPOS();
   }, []);
 
@@ -120,31 +137,34 @@ export default function POSPage() {
     }, 0);
   }, [cart, saleType]);
 
-  const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
+  const filteredStockItems = useMemo(() => {
+    return stockItems.filter((stock) => {
       const search = productSearch.toLowerCase();
+      const product = stock.product;
 
       return (
         product.name.toLowerCase().includes(search) ||
         product.sku.toLowerCase().includes(search)
       );
     });
-  }, [products, productSearch]);
+  }, [stockItems, productSearch]);
 
   function handleBarcodeScan(value: string) {
     setBarcode(value);
+    const stock = stockItems.find((item) => {
+      const product = item.product;
 
-    const product = products.find(
-      (item) =>
-        item.sku.toLowerCase() === value.toLowerCase() ||
-        item.name.toLowerCase() === value.toLowerCase(),
-    );
+      return (
+        product.sku.toLowerCase() === value.toLowerCase() ||
+        product.name.toLowerCase() === value.toLowerCase()
+      );
+    });
 
-    if (!product) return;
+    if (!stock) return;
 
-    addToCart(product);
+    addToCart(stock.product);
     setBarcode("");
-    setMessage(`Added ${product.name} to cart.`);
+    setMessage(`Added ${stock.product.name} to cart.`);
   }
 
   function addToCart(product: Product) {
@@ -198,8 +218,16 @@ export default function POSPage() {
       setMessage(`Sale complete: ${response.data.sale_number}`);
       setCart([]);
       setCashAmount("");
+      await loadPOS();
     } catch (error: any) {
-      setMessage(error?.response?.data?.detail || "Checkout failed.");
+      console.error("Checkout error:", error?.response?.data || error);
+
+      const detail =
+        error?.response?.data?.detail ||
+        JSON.stringify(error?.response?.data) ||
+        "Checkout failed.";
+
+      setMessage(detail);
     } finally {
       setCheckingOut(false);
     }
@@ -218,6 +246,30 @@ export default function POSPage() {
       setMessage("Shift opened successfully.");
     } catch (error: any) {
       setMessage(error?.response?.data?.detail || "Failed to open shift.");
+    }
+  }
+
+  async function closeShift() {
+    if (!currentShift) return;
+
+    setClosingShift(true);
+    setMessage("");
+
+    try {
+      const res = await api.post(`/sales/shifts/${currentShift.id}/close/`, {
+        closing_cash: closingCash,
+      });
+
+      setMessage(
+        `Shift closed. Expected: KES ${res.data.expected_cash}, Difference: KES ${res.data.difference}`,
+      );
+
+      setCurrentShift(null);
+      setClosingCash("");
+    } catch (error: any) {
+      setMessage(error?.response?.data?.detail || "Failed to close shift.");
+    } finally {
+      setClosingShift(false);
     }
   }
   const { user, loadingUser } = useCurrentUser();
@@ -267,7 +319,38 @@ export default function POSPage() {
             </div>
           </section>
         )}
+        {currentShift && (
+          <section className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-emerald-200">
+                  Active Cash Shift
+                </h2>
+                <p className="mt-1 text-sm text-emerald-100/80">
+                  {currentShift.branch} · Opening Cash: KES{" "}
+                  {currentShift.opening_cash}
+                </p>
+              </div>
 
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  value={closingCash}
+                  onChange={(e) => setClosingCash(e.target.value)}
+                  placeholder="Closing cash"
+                  className="rounded-lg border border-white/10 bg-slate-900 px-4 py-3 outline-none focus:border-emerald-400"
+                />
+
+                <button
+                  onClick={closeShift}
+                  disabled={!closingCash || closingShift}
+                  className="rounded-lg bg-red-400 px-5 py-3 font-semibold text-slate-950 hover:bg-red-300 disabled:opacity-50"
+                >
+                  {closingShift ? "Closing..." : "Close Shift"}
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
         <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
           <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <input
@@ -311,22 +394,32 @@ export default function POSPage() {
             </div>
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {filteredProducts.map((product) => (
-                <button
-                  key={product.id}
-                  onClick={() => addToCart(product)}
-                  className="rounded-xl border border-white/10 bg-slate-900 p-4 text-left hover:border-emerald-400"
-                >
-                  <p className="font-semibold">{product.name}</p>
-                  <p className="text-sm text-slate-400">{product.sku}</p>
-                  <p className="mt-3 text-emerald-400">
-                    KES{" "}
-                    {saleType === "WHOLESALE"
-                      ? product.wholesale_price
-                      : product.retail_price}
-                  </p>
-                </button>
-              ))}
+              {filteredStockItems.map((stock) => {
+                const product = stock.product;
+
+                return (
+                  <button
+                    key={stock.id}
+                    onClick={() => addToCart(product)}
+                    disabled={Number(stock.quantity) <= 0}
+                    className="rounded-xl border border-white/10 bg-slate-900 p-4 text-left hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <p className="font-semibold">{product.name}</p>
+                    <p className="text-sm text-slate-400">{product.sku}</p>
+
+                    <p className="mt-3 text-emerald-400">
+                      KES{" "}
+                      {saleType === "WHOLESALE"
+                        ? product.wholesale_price
+                        : product.retail_price}
+                    </p>
+
+                    <p className="mt-2 text-xs text-slate-500">
+                      In stock: {stock.quantity}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
           </section>
 

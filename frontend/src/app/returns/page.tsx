@@ -37,6 +37,7 @@ export default function ReturnsPage() {
   const [reason, setReason] = useState("");
   const [restock, setRestock] = useState(true);
   const [message, setMessage] = useState("");
+  const [receiptVerified, setReceiptVerified] = useState(true);
 
   async function loadSales() {
     const res = await api.get("/sales/");
@@ -75,6 +76,7 @@ export default function ReturnsPage() {
       const res = await api.post("/sales/returns/create/", {
         sale_id: Number(selectedSaleId),
         reason,
+        receipt_verified: receiptVerified,
         items: [
           {
             sale_item_id: Number(selectedItemId),
@@ -85,7 +87,7 @@ export default function ReturnsPage() {
       });
 
       setMessage(
-        `Return processed. Refund: KES ${res.data.total_refund_amount}`,
+        `Return processed. Refund: KES ${res.data.total_refund_amount}. Risk: ${res.data.refund_risk_level}`,
       );
       setSelectedSaleId("");
       setSaleDetail(null);
@@ -189,6 +191,14 @@ export default function ReturnsPage() {
                     </option>
                   ))}
                 </select>
+                <label className="mt-4 flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={receiptVerified}
+                    onChange={(e) => setReceiptVerified(e.target.checked)}
+                  />
+                  Receipt verified
+                </label>
 
                 <label className="mt-4 block text-sm text-slate-300">
                   Quantity
