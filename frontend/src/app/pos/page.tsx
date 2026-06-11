@@ -55,6 +55,18 @@ function printReceipt() {
   window.print();
 }
 
+function updateQuantity(productId: number, delta: number) {
+  setCart((current) =>
+    current
+      .map((item) =>
+        item.product.id === productId
+          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
+          : item,
+      )
+      .filter((item) => item.quantity > 0),
+  );
+}
+
 export default function POSPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -65,6 +77,7 @@ export default function POSPage() {
   const [currentShift, setCurrentShift] = useState<CashShift | null>(null);
   const [openingCash, setOpeningCash] = useState("1000.00");
   const [receipt, setReceipt] = useState<SaleReceipt | null>(null);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   useEffect(() => {
     async function loadPOS() {
@@ -116,6 +129,9 @@ export default function POSPage() {
   }
 
   async function checkout() {
+    if (checkingOut) return;
+
+    setCheckingOut(true);
     setMessage("");
 
     try {
@@ -133,6 +149,7 @@ export default function POSPage() {
           },
         ],
       });
+
       const receiptRes = await api.get(`/sales/${response.data.id}/`);
 
       setReceipt(receiptRes.data);
@@ -141,6 +158,8 @@ export default function POSPage() {
       setCashAmount("");
     } catch (error: any) {
       setMessage(error?.response?.data?.detail || "Checkout failed.");
+    } finally {
+      setCheckingOut(false);
     }
   }
 
@@ -160,6 +179,7 @@ export default function POSPage() {
     }
   }
   const { user, loadingUser } = useCurrentUser();
+  const change = Number(cashAmount || 0) - total;
 
   if (loadingUser) {
     return (
@@ -247,10 +267,10 @@ export default function POSPage() {
             <h2 className="text-xl font-semibold">Cart</h2>
 
             <div className="mt-4 space-y-3">
-              disabled={cart.length === 0 || !currentShift}
               {cart.length === 0 && (
                 <p className="text-sm text-slate-400">No items added yet.</p>
               )}
+
               {cart.map((item) => (
                 <div
                   key={item.product.id}
@@ -258,9 +278,24 @@ export default function POSPage() {
                 >
                   <div>
                     <p className="font-medium">{item.product.name}</p>
-                    <p className="text-sm text-slate-400">
-                      Qty: {item.quantity}
-                    </p>
+
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        onClick={() => updateQuantity(item.product.id, -1)}
+                        className="rounded bg-white/10 px-2 py-1"
+                      >
+                        -
+                      </button>
+
+                      <span className="text-sm">{item.quantity}</span>
+
+                      <button
+                        onClick={() => updateQuantity(item.product.id, 1)}
+                        className="rounded bg-white/10 px-2 py-1"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
 
                   <button
@@ -278,6 +313,10 @@ export default function POSPage() {
                 <span>Total</span>
                 <span>KES {total.toFixed(2)}</span>
               </div>
+              <div className="mt-2 flex justify-between text-sm text-slate-400">
+                <span>Change</span>
+                <span>KES {change > 0 ? change.toFixed(2) : "0.00"}</span>
+              </div>
 
               <input
                 className="mt-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3 outline-none focus:border-emerald-400"
@@ -288,10 +327,15 @@ export default function POSPage() {
 
               <button
                 onClick={checkout}
-                disabled={cart.length === 0}
-                className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+                disabled={
+                  checkingOut ||
+                  cart.length === 0 ||
+                  !currentShift ||
+                  Number(cashAmount || 0) < total
+                }
+                className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {currentShift ? "Complete Sale" : "Open Shift First"}
+                {checkingOut ? "Processing..." : "Complete Sale"}
               </button>
             </div>
           </aside>
