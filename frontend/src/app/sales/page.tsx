@@ -119,57 +119,53 @@ export default function SalesPage() {
             <p className="text-slate-400">Loading sales...</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="text-slate-400">
-                  <tr className="border-b border-white/10">
-                    <th className="py-3">Receipt</th>
-                    <th className="py-3">Type</th>
-                    <th className="py-3">Branch</th>
-                    <th className="py-3">Cashier</th>
-                    <th className="py-3">Total</th>
-                    <th className="py-3">Date</th>
-                    <th className="py-3">Action</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredSales.map((sale) => (
-                    <tr key={sale.id} className="border-b border-white/5">
-                      <td className="py-3 font-medium">{sale.sale_number}</td>
-                      <td className="py-3 text-slate-400">{sale.sale_type}</td>
-                      <td className="py-3 text-slate-400">{sale.branch}</td>
-                      <td className="py-3 text-slate-400">{sale.cashier}</td>
-                      <td className="py-3 font-semibold">
-                        KES {sale.total_amount}
-                      </td>
-                      <td className="py-3 text-slate-400">
-                        {new Date(sale.created_at).toLocaleString()}
-                      </td>
-                      <td className="py-3">
-                        <button
-                          onClick={() => viewReceipt(sale.id)}
-                          className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950"
-                        >
-                          Receipt
-                        </button>
-                      </td>
+              {filteredSales.length === 0 ? (
+                <EmptyState
+                  title="No sales found"
+                  description="Completed sales will appear here after checkout."
+                />
+              ) : (
+                <table className="w-full text-left text-sm">
+                  <thead className="text-slate-400">
+                    <tr className="border-b border-white/10">
+                      <th className="py-3">Receipt</th>
+                      <th className="py-3">Type</th>
+                      <th className="py-3">Branch</th>
+                      <th className="py-3">Cashier</th>
+                      <th className="py-3">Total</th>
+                      <th className="py-3">Date</th>
+                      <th className="py-3">Action</th>
                     </tr>
-                  ))}
+                  </thead>
 
-                  {filteredSales.length === 0 ? (
-                    <EmptyState
-                      title="No sales found"
-                      description="Completed sales will appear here after checkout."
-                    />
-                  ) : (
-                    <tr>
-                      <td className="py-6 text-slate-400" colSpan={7}>
-                        No sales found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                  <tbody>
+                    {filteredSales.map((sale) => (
+                      <tr key={sale.id} className="border-b border-white/5">
+                        <td className="py-3 font-medium">{sale.sale_number}</td>
+                        <td className="py-3 text-slate-400">
+                          {sale.sale_type}
+                        </td>
+                        <td className="py-3 text-slate-400">{sale.branch}</td>
+                        <td className="py-3 text-slate-400">{sale.cashier}</td>
+                        <td className="py-3 font-semibold">
+                          KES {sale.total_amount}
+                        </td>
+                        <td className="py-3 text-slate-400">
+                          {new Date(sale.created_at).toLocaleString()}
+                        </td>
+                        <td className="py-3">
+                          <button
+                            onClick={() => viewReceipt(sale.id)}
+                            className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950"
+                          >
+                            Receipt
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
         </section>
