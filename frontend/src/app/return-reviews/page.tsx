@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { AlertMessage } from "@/components/AlertMessage";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { api } from "@/lib/api";
+import { unwrapList } from "@/lib/pagination";
 
 type SaleReturn = {
   id: number;
@@ -32,7 +33,7 @@ export default function ReturnReviewsPage() {
   async function loadReturns() {
     try {
       const res = await api.get("/sales/returns/");
-      setReturns(res.data);
+      setReturns(unwrapList(res.data));
     } catch {
       setMessage("Failed to load returns.");
     }

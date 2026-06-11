@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 from apps.accounts.permissions import IsStoreKeeperOrAdmin
 
 from apps.branches.models import Branch
-from .models import Product, BranchStock, StockMovement
+from .models import Product, BranchStock, StockMovement, Category
 from .serializers import (
     ProductSerializer,
     BranchStockSerializer,

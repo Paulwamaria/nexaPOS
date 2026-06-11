@@ -39,6 +39,15 @@ export default function InventoryPage() {
   const [notes, setNotes] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  const [productName, setProductName] = useState("");
+  const [sku, setSku] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [costPrice, setCostPrice] = useState("");
+  const [retailPrice, setRetailPrice] = useState("");
+  const [wholesalePrice, setWholesalePrice] = useState("");
+  const [openingStock, setOpeningStock] = useState("0");
 
   const branchId = 2;
 
@@ -46,13 +55,15 @@ export default function InventoryPage() {
     setLoading(true);
 
     try {
-      const [stocksRes, productsRes] = await Promise.all([
+      const [stocksRes, productsRes, categoriesRes] = await Promise.all([
         api.get("/inventory/stocks/"),
         api.get("/inventory/products/"),
+        api.get("/inventory/categories/"),
       ]);
 
       setStocks(unwrapList(stocksRes.data));
       setProducts(unwrapList(productsRes.data));
+      setCategories(unwrapList(categoriesRes.data));
     } finally {
       setLoading(false);
     }
@@ -67,6 +78,49 @@ export default function InventoryPage() {
       (stock) => Number(stock.quantity) <= Number(stock.reorder_level),
     ).length;
   }, [stocks]);
+
+  async function createProduct(e: React.FormEvent) {
+    e.preventDefault();
+    setMessage("");
+
+    try {
+      const productRes = await api.post("/inventory/products/", {
+        category_id: Number(categoryId),
+        name: productName,
+        sku,
+        cost_price: costPrice,
+        retail_price: retailPrice,
+        wholesale_price: wholesalePrice,
+        wholesale_min_quantity: 10,
+        is_active: true,
+      });
+
+      const newProductId = productRes.data.id;
+
+      if (Number(openingStock) > 0) {
+        await api.post("/inventory/adjust-stock/", {
+          branch_id: branchId,
+          product_id: newProductId,
+          quantity: openingStock,
+          adjustment_type: "ADJUSTMENT_IN",
+          notes: "Opening stock",
+        });
+      }
+
+      setMessage("Product created successfully.");
+      setProductName("");
+      setSku("");
+      setCategoryId("");
+      setCostPrice("");
+      setRetailPrice("");
+      setWholesalePrice("");
+      setOpeningStock("0");
+
+      await loadInventory();
+    } catch (error: any) {
+      setMessage(error?.response?.data?.detail || "Failed to create product.");
+    }
+  }
 
   async function adjustStock(e: React.FormEvent) {
     e.preventDefault();
@@ -182,6 +236,77 @@ export default function InventoryPage() {
               </div>
             )}
           </div>
+          <form
+            onSubmit={createProduct}
+            className="rounded-2xl border border-white/10 bg-white/5 p-5"
+          >
+            <h2 className="text-xl font-semibold">Create Product</h2>
+
+            <input
+              required
+              className="mt-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              placeholder="Product name"
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
+            />
+
+            <input
+              required
+              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              placeholder="SKU / Barcode"
+              value={sku}
+              onChange={(e) => setSku(e.target.value)}
+            />
+
+            <select
+              required
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+            >
+              <option value="">Select category</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+
+            <input
+              required
+              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              placeholder="Cost price"
+              value={costPrice}
+              onChange={(e) => setCostPrice(e.target.value)}
+            />
+
+            <input
+              required
+              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              placeholder="Retail price"
+              value={retailPrice}
+              onChange={(e) => setRetailPrice(e.target.value)}
+            />
+
+            <input
+              required
+              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              placeholder="Wholesale price"
+              value={wholesalePrice}
+              onChange={(e) => setWholesalePrice(e.target.value)}
+            />
+
+            <input
+              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              placeholder="Opening stock"
+              value={openingStock}
+              onChange={(e) => setOpeningStock(e.target.value)}
+            />
+
+            <button className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400">
+              Create Product
+            </button>
+          </form>
 
           <form
             onSubmit={adjustStock}
