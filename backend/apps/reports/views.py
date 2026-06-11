@@ -8,6 +8,14 @@ from apps.expenses.models import Expense
 from apps.inventory.models import BranchStock
 from apps.sales.models import Sale, SaleItem
 from apps.suppliers.models import PurchaseOrder
+from rest_framework.permissions import IsAuthenticated
+
+from apps.reports.exports import (
+    export_sales_csv,
+    export_inventory_csv,
+    export_audit_logs_csv,
+    export_procurement_csv,
+)
 
 
 def apply_date_filters(queryset, request, date_field):
@@ -187,3 +195,31 @@ class ProcurementSummaryAPIView(APIView):
         )
 
         return Response(data)
+
+
+class SalesCSVExportAPIView(APIView):
+    permission_classes = [IsAdminOrSuperAdmin]
+
+    def get(self, request):
+        return export_sales_csv(request)
+
+
+class InventoryCSVExportAPIView(APIView):
+    permission_classes = [IsAdminOrSuperAdmin]
+
+    def get(self, request):
+        return export_inventory_csv(request)
+
+
+class AuditLogsCSVExportAPIView(APIView):
+    permission_classes = [IsAdminOrSuperAdmin]
+
+    def get(self, request):
+        return export_audit_logs_csv(request)
+
+
+class ProcurementCSVExportAPIView(APIView):
+    permission_classes = [IsAdminOrSuperAdmin]
+
+    def get(self, request):
+        return export_procurement_csv(request)

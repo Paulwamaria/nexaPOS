@@ -7,6 +7,10 @@ from .views import (
     ProfitByBranchAPIView,
     CashierPerformanceAPIView,
     ProcurementSummaryAPIView,
+    SalesCSVExportAPIView,
+    InventoryCSVExportAPIView,
+    AuditLogsCSVExportAPIView,
+    ProcurementCSVExportAPIView,
 )
 
 urlpatterns = [
@@ -35,5 +39,21 @@ urlpatterns = [
         "procurement-summary/",
         ProcurementSummaryAPIView.as_view(),
         name="procurement-summary",
+    ),
+    path("exports/sales.csv", SalesCSVExportAPIView.as_view(), name="export-sales-csv"),
+    path(
+        "exports/inventory.csv",
+        InventoryCSVExportAPIView.as_view(),
+        name="export-inventory-csv",
+    ),
+    path(
+        "exports/audit-logs.csv",
+        AuditLogsCSVExportAPIView.as_view(),
+        name="export-audit-logs-csv",
+    ),
+    path(
+        "exports/procurement.csv",
+        ProcurementCSVExportAPIView.as_view(),
+        name="export-procurement-csv",
     ),
 ]
