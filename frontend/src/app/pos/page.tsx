@@ -50,6 +50,12 @@ type SaleReceipt = {
     reference: string;
   }[];
 };
+type Customer = {
+  id: number;
+  name: string;
+  phone: string;
+  customer_type: string;
+};
 
 function printReceipt() {
   window.print();
@@ -81,13 +87,19 @@ export default function POSPage() {
   const [productSearch, setProductSearch] = useState("");
   const [barcode, setBarcode] = useState("");
 
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
+
   useEffect(() => {
     async function loadPOS() {
       const productsRes = await api.get("/inventory/products/");
       setProducts(productsRes.data);
-
+      const customersRes = await api.get("/sales/customers/");
+      setCustomers(customersRes.data);
       try {
-        const shiftRes = await api.get("/sales/shifts/current/");
+        const shiftRes = await api.get(
+          `/sales/shifts/current/?branch_id=${branchId}`,
+        );
         setCurrentShift(shiftRes.data);
       } catch {
         setCurrentShift(null);
@@ -175,6 +187,7 @@ export default function POSPage() {
           {
             payment_method: "CASH",
             amount: cashAmount || String(total),
+            customer_id: selectedCustomerId ? Number(selectedCustomerId) : null,
           },
         ],
       });
@@ -272,6 +285,18 @@ export default function POSPage() {
             />
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-semibold">Products</h2>
+              <select
+                value={selectedCustomerId}
+                onChange={(e) => setSelectedCustomerId(e.target.value)}
+                className="rounded-lg bg-slate-900 border border-white/10 px-3 py-2"
+              >
+                <option value="">Walk-in Customer</option>
+                {customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name} — {customer.phone}
+                  </option>
+                ))}
+              </select>
 
               <select
                 value={saleType}
