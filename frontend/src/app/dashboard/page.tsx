@@ -7,6 +7,9 @@ import { api } from "@/lib/api";
 import { logout } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { PageHeader } from "@/components/PageHeader";
+import { AlertMessage } from "@/components/AlertMessage";
+import { EmptyState } from "@/components/EmptyState";
 type User = {
   id: number;
   email: string;
@@ -70,11 +73,10 @@ export default function DashboardPage() {
       <main className="min-h-screen bg-slate-950 text-white p-6">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <p className="text-emerald-400 text-sm font-medium">NexaPOS</p>
-            <h1 className="text-3xl font-bold mt-2">Dashboard</h1>
-            <p className="text-slate-400 mt-1">
-              Welcome back, {user?.full_name} · {user?.role}
-            </p>
+            <PageHeader
+              title="Dashboard"
+              description={`Welcome back, ${user?.full_name} · ${user?.role}`}
+            />
           </div>
 
           <button

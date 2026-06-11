@@ -5,6 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { PageHeader } from "@/components/PageHeader";
+import { AlertMessage } from "@/components/AlertMessage";
+import { EmptyState } from "@/components/EmptyState";
 type Product = {
   id: number;
   name: string;
@@ -169,16 +172,12 @@ export default function POSPage() {
   return (
     <AppShell user={user}>
       <main className="min-h-screen bg-slate-950 text-white p-6">
-        <div className="mb-6">
-          <p className="text-emerald-400 text-sm font-medium">NexaPOS</p>
-          <h1 className="text-3xl font-bold mt-2">POS Terminal</h1>
-        </div>
+        <PageHeader
+          title="POS Terminal"
+          description="Manage branch sales and transactions."
+        />
 
-        {message && (
-          <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-4">
-            {message}
-          </div>
-        )}
+        {message && <AlertMessage message={message} />}
 
         {!currentShift && (
           <section className="mb-6 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-5">

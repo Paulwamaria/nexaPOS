@@ -5,6 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { PageHeader } from "@/components/PageHeader";
+import { AlertMessage } from "@/components/AlertMessage";
+import { EmptyState } from "@/components/EmptyState";
 
 type Sale = {
   id: number;
@@ -109,18 +112,13 @@ export default function ReturnsPage() {
     <AppShell user={user}>
       <main className="min-h-screen bg-slate-950 text-white p-6">
         <div className="mb-8">
-          <p className="text-emerald-400 text-sm font-medium">NexaPOS</p>
-          <h1 className="text-3xl font-bold mt-2">Returns</h1>
-          <p className="mt-1 text-slate-400">
-            Process customer returns and restock inventory.
-          </p>
+          <PageHeader
+            title="Returns"
+            description="Manage customer returns and restock inventory."
+          />
         </div>
 
-        {message && (
-          <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-4">
-            {message}
-          </div>
-        )}
+        {message && <AlertMessage message={message} />}
 
         <section className="grid gap-6 lg:grid-cols-[1fr_420px]">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-5">

@@ -5,6 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { PageHeader } from "@/components/PageHeader";
+import { AlertMessage } from "@/components/AlertMessage";
+import { EmptyState } from "@/components/EmptyState";
 
 type Sale = {
   id: number;
@@ -92,18 +95,13 @@ export default function SalesPage() {
     <AppShell user={user}>
       <main className="min-h-screen bg-slate-950 text-white p-6">
         <div className="mb-8">
-          <p className="text-emerald-400 text-sm font-medium">NexaPOS</p>
-          <h1 className="text-3xl font-bold mt-2">Sales History</h1>
-          <p className="mt-1 text-slate-400">
-            View completed sales and reprint receipts.
-          </p>
+          <PageHeader
+            title="Sales"
+            description="View complete sales history, search receipts, and print sales receipts."
+          />
         </div>
 
-        {message && (
-          <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-4">
-            {message}
-          </div>
-        )}
+        {message && <AlertMessage message={message} />}
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -158,7 +156,12 @@ export default function SalesPage() {
                     </tr>
                   ))}
 
-                  {filteredSales.length === 0 && (
+                  {filteredSales.length === 0 ? (
+                    <EmptyState
+                      title="No sales found"
+                      description="Completed sales will appear here after checkout."
+                    />
+                  ) : (
                     <tr>
                       <td className="py-6 text-slate-400" colSpan={7}>
                         No sales found.

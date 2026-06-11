@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { PageHeader } from "@/components/PageHeader";
+import { AlertMessage } from "@/components/AlertMessage";
+import { EmptyState } from "@/components/EmptyState";
 
 type Supplier = {
   id: number;
@@ -159,18 +162,13 @@ export default function ProcurementPage() {
     <AppShell user={user}>
       <main className="min-h-screen bg-slate-950 text-white p-6">
         <div className="mb-8">
-          <p className="text-emerald-400 text-sm font-medium">NexaPOS</p>
-          <h1 className="text-3xl font-bold mt-2">Procurement</h1>
-          <p className="mt-1 text-slate-400">
-            Manage suppliers, purchase orders, and goods receiving.
-          </p>
+          <PageHeader
+            title="Procurement"
+            description="Manage suppliers, purchase orders, and goods receiving."
+          />
         </div>
 
-        {message && (
-          <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-4">
-            {message}
-          </div>
-        )}
+        {message && <AlertMessage message={message} />}
 
         <section className="grid gap-6 xl:grid-cols-2">
           <form
@@ -266,42 +264,49 @@ export default function ProcurementPage() {
           <h2 className="text-xl font-semibold">Purchase Orders</h2>
 
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-slate-400">
-                <tr className="border-b border-white/10">
-                  <th className="py-3">Order</th>
-                  <th className="py-3">Supplier</th>
-                  <th className="py-3">Branch</th>
-                  <th className="py-3">Status</th>
-                  <th className="py-3">Total</th>
-                  <th className="py-3">Action</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {purchaseOrders.map((po) => (
-                  <tr key={po.id} className="border-b border-white/5">
-                    <td className="py-3 font-medium">{po.order_number}</td>
-                    <td className="py-3 text-slate-400">{po.supplier}</td>
-                    <td className="py-3 text-slate-400">{po.branch}</td>
-                    <td className="py-3">{po.status}</td>
-                    <td className="py-3">KES {po.total_amount}</td>
-                    <td className="py-3">
-                      {po.status !== "RECEIVED" ? (
-                        <button
-                          onClick={() => receivePurchaseOrder(po.id)}
-                          className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950"
-                        >
-                          Receive
-                        </button>
-                      ) : (
-                        <span className="text-slate-500">Received</span>
-                      )}
-                    </td>
+            {purchaseOrders.length === 0 ? (
+              <EmptyState
+                title="No purchase orders"
+                description="Create your first purchase order to get started."
+              />
+            ) : (
+              <table className="w-full text-left text-sm">
+                <thead className="text-slate-400">
+                  <tr className="border-b border-white/10">
+                    <th className="py-3">Order</th>
+                    <th className="py-3">Supplier</th>
+                    <th className="py-3">Branch</th>
+                    <th className="py-3">Status</th>
+                    <th className="py-3">Total</th>
+                    <th className="py-3">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+
+                <tbody>
+                  {purchaseOrders.map((po) => (
+                    <tr key={po.id} className="border-b border-white/5">
+                      <td className="py-3 font-medium">{po.order_number}</td>
+                      <td className="py-3 text-slate-400">{po.supplier}</td>
+                      <td className="py-3 text-slate-400">{po.branch}</td>
+                      <td className="py-3">{po.status}</td>
+                      <td className="py-3">KES {po.total_amount}</td>
+                      <td className="py-3">
+                        {po.status !== "RECEIVED" ? (
+                          <button
+                            onClick={() => receivePurchaseOrder(po.id)}
+                            className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950"
+                          >
+                            Receive
+                          </button>
+                        ) : (
+                          <span className="text-slate-500">Received</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </section>
       </main>

@@ -6,6 +6,9 @@ import { Boxes, PackageSearch, PlusCircle, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { PageHeader } from "@/components/PageHeader";
+import { AlertMessage } from "@/components/AlertMessage";
+import { EmptyState } from "@/components/EmptyState";
 
 type Product = {
   id: number;
@@ -101,18 +104,13 @@ export default function InventoryPage() {
     <AppShell user={user}>
       <main className="min-h-screen bg-slate-950 text-white p-6">
         <div className="mb-8">
-          <p className="text-emerald-400 text-sm font-medium">NexaPOS</p>
-          <h1 className="text-3xl font-bold mt-2">Inventory</h1>
-          <p className="mt-1 text-slate-400">
-            Manage branch stock levels and inventory adjustments.
-          </p>
+          <PageHeader
+            title="Inventory"
+            description="Manage branch stock levels and inventory adjustments."
+          />
         </div>
 
-        {message && (
-          <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-4">
-            {message}
-          </div>
-        )}
+        {message && <AlertMessage message={message} />}
 
         <section className="grid gap-4 md:grid-cols-3">
           <InventoryCard
