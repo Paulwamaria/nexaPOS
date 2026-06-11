@@ -8,6 +8,7 @@ import { logout } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { AlertMessage } from "@/components/AlertMessage";
+import { unwrapList } from "@/lib/pagination";
 type User = {
   id: number;
   email: string;
@@ -53,7 +54,7 @@ export default function DashboardPage() {
         setReport(reportRes.data);
 
         setRiskyReturns(
-          returnsRes.data.filter(
+          unwrapList(returnsRes.data).filter(
             (item: SaleReturn) =>
               !item.manager_reviewed &&
               ["MEDIUM", "HIGH"].includes(item.refund_risk_level),

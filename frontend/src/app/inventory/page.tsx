@@ -9,6 +9,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { PageHeader } from "@/components/PageHeader";
 import { AlertMessage } from "@/components/AlertMessage";
 import { EmptyState } from "@/components/EmptyState";
+import { unwrapList } from "@/lib/pagination";
 
 type Product = {
   id: number;
@@ -50,8 +51,8 @@ export default function InventoryPage() {
         api.get("/inventory/products/"),
       ]);
 
-      setStocks(stocksRes.data);
-      setProducts(productsRes.data);
+      setStocks(unwrapList(stocksRes.data));
+      setProducts(unwrapList(productsRes.data));
     } finally {
       setLoading(false);
     }

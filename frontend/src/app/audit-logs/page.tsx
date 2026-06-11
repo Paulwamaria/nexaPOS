@@ -7,6 +7,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { AlertMessage } from "@/components/AlertMessage";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { api } from "@/lib/api";
+import { unwrapList } from "@/lib/pagination";
+import type { PaginatedResponse } from "@/types/pagination";
 
 type AuditLog = {
   id: number;
@@ -23,18 +25,25 @@ export default function AuditLogsPage() {
   const { user, loadingUser } = useCurrentUser();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [message, setMessage] = useState("");
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
+
+  async function loadLogs(pageNumber = page) {
+    try {
+      const res = await api.get(`/audit-logs/?page=${pageNumber}`);
+
+      setLogs(res.data.results);
+      setCount(res.data.count);
+      setPage(pageNumber);
+    } catch {
+      setMessage("Failed to load audit logs.");
+    }
+  }
 
   useEffect(() => {
-    async function loadLogs() {
-      try {
-        const res = await api.get("/audit-logs/");
-        setLogs(res.data);
-      } catch {
-        setMessage("Failed to load audit logs.");
-      }
+    if (!loadingUser) {
+      loadLogs(1);
     }
-
-    if (!loadingUser) loadLogs();
   }, [loadingUser]);
 
   if (loadingUser) {
@@ -102,6 +111,27 @@ export default function AuditLogsPage() {
                 )}
               </tbody>
             </table>
+            <div className="mt-4 flex items-center justify-between">
+              <button
+                disabled={page === 1}
+                onClick={() => loadLogs(page - 1)}
+                className="rounded-lg border border-white/10 px-4 py-2 text-sm disabled:opacity-50"
+              >
+                Previous
+              </button>
+
+              <span className="text-sm text-slate-400">
+                Page {page} · {count} logs
+              </span>
+
+              <button
+                disabled={page * 20 >= count}
+                onClick={() => loadLogs(page + 1)}
+                className="rounded-lg border border-white/10 px-4 py-2 text-sm disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </section>
       </div>

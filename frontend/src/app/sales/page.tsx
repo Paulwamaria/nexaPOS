@@ -8,7 +8,8 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { PageHeader } from "@/components/PageHeader";
 import { AlertMessage } from "@/components/AlertMessage";
 import { EmptyState } from "@/components/EmptyState";
-
+import { unwrapList } from "@/lib/pagination";
+import { PaginatedResponse } from "@/types/pagination";
 type Sale = {
   id: number;
   sale_number: string;
@@ -43,13 +44,20 @@ export default function SalesPage() {
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
 
-  async function loadSales() {
+  async function loadSales(pageNumber = page) {
     setLoading(true);
 
     try {
-      const res = await api.get("/sales/");
-      setSales(res.data);
+      const res = await api.get(`/sales/?page=${pageNumber}`);
+
+      const salesData = Array.isArray(res.data) ? res.data : res.data.results;
+
+      setSales(salesData);
+      setCount(Array.isArray(res.data) ? salesData.length : res.data.count);
+      setPage(pageNumber);
     } catch {
       setMessage("Failed to load sales.");
     } finally {
@@ -168,6 +176,28 @@ export default function SalesPage() {
               )}
             </div>
           )}
+
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              disabled={page === 1}
+              onClick={() => loadSales(page - 1)}
+              className="rounded-lg border border-white/10 px-4 py-2 text-sm disabled:opacity-50"
+            >
+              Previous
+            </button>
+
+            <span className="text-sm text-slate-400">
+              Page {page} · {count} sales
+            </span>
+
+            <button
+              disabled={page * 20 >= count}
+              onClick={() => loadSales(page + 1)}
+              className="rounded-lg border border-white/10 px-4 py-2 text-sm disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
         </section>
 
         {receipt && (

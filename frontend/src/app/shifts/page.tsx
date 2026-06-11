@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { AlertMessage } from "@/components/AlertMessage";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { api } from "@/lib/api";
+import { unwrapList } from "@/lib/pagination";
 
 type CashShift = {
   id: number;
@@ -30,7 +31,8 @@ export default function ShiftsPage() {
   async function loadShifts() {
     try {
       const res = await api.get("/sales/shifts/");
-      setShifts(res.data);
+      const shiftsData = unwrapList(res.data);
+      setShifts(shiftsData);
     } catch {
       setMessage("Failed to load shifts.");
     }

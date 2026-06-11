@@ -8,7 +8,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { PageHeader } from "@/components/PageHeader";
 import { AlertMessage } from "@/components/AlertMessage";
 import { EmptyState } from "@/components/EmptyState";
-
+import { unwrapList } from "@/lib/pagination";
 type Supplier = {
   id: number;
   name: string;
@@ -50,30 +50,28 @@ export default function ProcurementPage() {
   const [message, setMessage] = useState("");
 
   async function loadData() {
-    async function loadData() {
-      try {
-        const suppliersRes = await api.get("/procurement/suppliers/");
-        console.log("Suppliers OK");
-        setSuppliers(suppliersRes.data);
-      } catch (err) {
-        console.error("Suppliers failed", err);
-      }
+    try {
+      const suppliersRes = await api.get("/procurement/suppliers/");
+      console.log("Suppliers OK");
+      setSuppliers(unwrapList(suppliersRes.data));
+    } catch (err) {
+      console.error("Suppliers failed", err);
+    }
 
-      try {
-        const productsRes = await api.get("/inventory/products/");
-        console.log("Products OK");
-        setProducts(productsRes.data);
-      } catch (err) {
-        console.error("Products failed", err);
-      }
+    try {
+      const productsRes = await api.get("/inventory/products/");
+      console.log("Products OK");
+      setProducts(unwrapList(productsRes.data));
+    } catch (err) {
+      console.error("Products failed", err);
+    }
 
-      try {
-        const poRes = await api.get("/procurement/purchase-orders/");
-        console.log("POs OK");
-        setPurchaseOrders(poRes.data);
-      } catch (err) {
-        console.error("POs failed", err);
-      }
+    try {
+      const poRes = await api.get("/procurement/purchase-orders/");
+      console.log("POs OK");
+      setPurchaseOrders(unwrapList(poRes.data));
+    } catch (err) {
+      console.error("POs failed", err);
     }
   }
 

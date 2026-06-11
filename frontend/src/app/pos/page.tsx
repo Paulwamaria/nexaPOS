@@ -8,6 +8,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { PageHeader } from "@/components/PageHeader";
 import { AlertMessage } from "@/components/AlertMessage";
 import { EmptyState } from "@/components/EmptyState";
+import { unwrapList } from "@/lib/pagination";
 type Product = {
   id: number;
   name: string;
@@ -82,7 +83,6 @@ function updateQuantity(productId: number, delta: number) {
 }
 
 export default function POSPage() {
-  const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [branchId] = useState(2);
   const [saleType, setSaleType] = useState<"RETAIL" | "WHOLESALE">("RETAIL");
@@ -103,7 +103,7 @@ export default function POSPage() {
 
   async function loadPOS() {
     const stocksRes = await api.get(`/inventory/stocks/?branch_id=${branchId}`);
-    setStockItems(stocksRes.data);
+    setStockItems(unwrapList(stocksRes.data));
 
     try {
       const shiftRes = await api.get(
@@ -116,7 +116,7 @@ export default function POSPage() {
 
     try {
       const customersRes = await api.get("/sales/customers/");
-      setCustomers(customersRes.data);
+      setCustomers(unwrapList(customersRes.data));
     } catch {
       setCustomers([]);
     }

@@ -8,6 +8,7 @@ import { AlertMessage } from "@/components/AlertMessage";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { unwrapList } from "@/lib/pagination";
 
 type Product = {
   id: number;
@@ -33,7 +34,8 @@ export default function LowStockPage() {
   async function loadLowStock() {
     try {
       const res = await api.get("/inventory/low-stock/");
-      setItems(res.data);
+      const itemsData = unwrapList(res.data);
+      setItems(itemsData);
     } catch {
       setMessage("Failed to load low stock items.");
     }

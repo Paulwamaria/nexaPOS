@@ -8,6 +8,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { PageHeader } from "@/components/PageHeader";
 import { AlertMessage } from "@/components/AlertMessage";
 import { EmptyState } from "@/components/EmptyState";
+import { unwrapList } from "@/lib/pagination";
 
 type Sale = {
   id: number;
@@ -41,7 +42,7 @@ export default function ReturnsPage() {
 
   async function loadSales() {
     const res = await api.get("/sales/");
-    setSales(res.data);
+    setSales(unwrapList(res.data));
   }
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function ReturnsPage() {
     if (!id) return;
 
     const res = await api.get(`/sales/${id}/`);
-    setSaleDetail(res.data);
+    setSaleDetail(unwrapList(res.data));
   }
 
   const selectedItem = useMemo(() => {
