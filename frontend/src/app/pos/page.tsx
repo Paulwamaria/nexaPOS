@@ -79,6 +79,7 @@ export default function POSPage() {
   const [receipt, setReceipt] = useState<SaleReceipt | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [productSearch, setProductSearch] = useState("");
+  const [barcode, setBarcode] = useState("");
 
   useEffect(() => {
     async function loadPOS() {
@@ -117,6 +118,20 @@ export default function POSPage() {
       );
     });
   }, [products, productSearch]);
+
+  function handleBarcodeScan(value: string) {
+    setBarcode(value);
+
+    const product = products.find(
+      (p) => p.sku.toLowerCase() === value.toLowerCase(),
+    );
+
+    if (!product) return;
+
+    addToCart(product);
+
+    setBarcode("");
+  }
 
   function addToCart(product: Product) {
     setCart((current) => {
@@ -240,6 +255,13 @@ export default function POSPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
           <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <input
+              autoFocus
+              value={barcode}
+              onChange={(e) => handleBarcodeScan(e.target.value)}
+              className="mb-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3 outline-none focus:border-emerald-400"
+              placeholder="Scan or enter barcode..."
+            />
             <input
               className="mb-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3 outline-none focus:border-emerald-400"
               placeholder="Search product by name or SKU..."
