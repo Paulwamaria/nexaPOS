@@ -16,6 +16,7 @@ import {
   ShoppingCart,
   X,
   AlertTriangle,
+  Clock,
 } from "lucide-react";
 import { logout } from "@/lib/auth";
 
@@ -49,6 +50,12 @@ const navItems = [
     href: "/procurement",
     icon: PackagePlus,
     roles: ["STORE_KEEPER", "ADMIN", "SUPERADMIN"],
+  },
+  {
+    label: "Shifts",
+    href: "/shifts",
+    icon: Clock,
+    roles: ["CASHIER", "ADMIN", "SUPERADMIN"],
   },
   {
     label: "Sales",
