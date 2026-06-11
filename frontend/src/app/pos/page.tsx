@@ -78,6 +78,7 @@ export default function POSPage() {
   const [openingCash, setOpeningCash] = useState("1000.00");
   const [receipt, setReceipt] = useState<SaleReceipt | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
 
   useEffect(() => {
     async function loadPOS() {
@@ -105,6 +106,17 @@ export default function POSPage() {
       return sum + price * item.quantity;
     }, 0);
   }, [cart, saleType]);
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const search = productSearch.toLowerCase();
+
+      return (
+        product.name.toLowerCase().includes(search) ||
+        product.sku.toLowerCase().includes(search)
+      );
+    });
+  }, [products, productSearch]);
 
   function addToCart(product: Product) {
     setCart((current) => {
@@ -228,6 +240,12 @@ export default function POSPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
           <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <input
+              className="mb-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3 outline-none focus:border-emerald-400"
+              placeholder="Search product by name or SKU..."
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+            />
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-semibold">Products</h2>
 
@@ -244,7 +262,7 @@ export default function POSPage() {
             </div>
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <button
                   key={product.id}
                   onClick={() => addToCart(product)}
