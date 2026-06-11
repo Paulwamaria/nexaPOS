@@ -27,31 +27,51 @@ export default function ReportsPage() {
   const [cashierPerformance, setCashierPerformance] = useState<Row[]>([]);
   const [procurementSummary, setProcurementSummary] = useState<Row[]>([]);
   const [message, setMessage] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [loadingReports, setLoadingReports] = useState(false);
+
+  async function loadReports() {
+    try {
+      const params = new URLSearchParams();
+      setLoadingReports(true);
+
+      if (startDate) {
+        params.append("start_date", startDate);
+      }
+
+      if (endDate) {
+        params.append("end_date", endDate);
+      }
+
+      const query = params.toString() ? `?${params.toString()}` : "";
+
+      const [top, sales, profit, cashier, procurement] = await Promise.all([
+        api.get(`/reports/top-selling-products/${query}`),
+        api.get(`/reports/sales-by-branch/${query}`),
+        api.get(`/reports/profit-by-branch/${query}`),
+        api.get(`/reports/cashier-performance/${query}`),
+        api.get(`/reports/procurement-summary/${query}`),
+      ]);
+
+      setTopProducts(top.data);
+      setSalesByBranch(sales.data);
+      setProfitByBranch(profit.data);
+      setCashierPerformance(cashier.data);
+      setProcurementSummary(procurement.data);
+
+      setMessage("");
+      setLoadingReports(false);
+    } catch {
+      setMessage("Failed to load reports.");
+    }
+  }
 
   useEffect(() => {
-    async function loadReports() {
-      try {
-        const [top, sales, profit, cashier, procurement] = await Promise.all([
-          api.get("/reports/top-selling-products/"),
-          api.get("/reports/sales-by-branch/"),
-          api.get("/reports/profit-by-branch/"),
-          api.get("/reports/cashier-performance/"),
-          api.get("/reports/procurement-summary/"),
-        ]);
-
-        setTopProducts(top.data);
-        setSalesByBranch(sales.data);
-        setProfitByBranch(profit.data);
-        setCashierPerformance(cashier.data);
-        setProcurementSummary(procurement.data);
-      } catch {
-        setMessage("Failed to load reports.");
-      }
+    if (!loadingUser) {
+      loadReports();
     }
-
-    if (!loadingUser) loadReports();
   }, [loadingUser]);
-
   if (loadingUser) {
     return (
       <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
@@ -69,6 +89,37 @@ export default function ReportsPage() {
         />
 
         <AlertMessage message={message} tone="error" />
+        <section className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
+            <div>
+              <label className="text-sm text-slate-400">Start date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3 text-white"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-slate-400">End date</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3 text-white"
+              />
+            </div>
+
+            <button
+              onClick={loadReports}
+              disabled={loadingReports}
+              className="self-end rounded-lg bg-emerald-500 px-5 py-3 font-semibold text-slate-950 disabled:opacity-50"
+            >
+              {loadingReports ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+        </section>
         <div className="grid gap-6 xl:grid-cols-2">
           <ReportSection
             title="Top Selling Products"
