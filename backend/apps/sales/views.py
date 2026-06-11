@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.db.models import Sum
 from apps.audit.models import AuditLog
 from apps.audit.services import create_audit_log
+from apps.sales.models import Customer
 
 from apps.branches.models import Branch
 from apps.inventory.models import Product
@@ -20,9 +21,10 @@ from apps.sales.serializers import (
     CashShiftCloseSerializer,
     SaleReturnCreateSerializer,
     SaleReturnResponseSerializer,
+    CustomerSerializer,
 )
 from apps.sales.services import process_checkout, process_sale_return
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView, ListCreateAPIView
 from apps.sales.models import Sale, CashShift, SaleReturn, SaleItem
 from apps.accounts.permissions import IsCashierOrAdmin
 
@@ -213,15 +215,20 @@ class CurrentCashShiftAPIView(APIView):
     permission_classes = [IsCashierOrAdmin]
 
     def get(self, request):
-        shift = (
-            CashShift.objects.select_related("branch", "cashier")
-            .filter(
-                cashier=request.user,
-                status="OPEN",
-            )
-            .order_by("-opened_at")
-            .first()
+        branch_id = request.query_params.get("branch_id")
+
+        queryset = CashShift.objects.select_related(
+            "branch",
+            "cashier",
+        ).filter(
+            cashier=request.user,
+            status="OPEN",
         )
+
+        if branch_id:
+            queryset = queryset.filter(branch_id=branch_id)
+
+        shift = queryset.order_by("-opened_at").first()
 
         if not shift:
             return Response(
@@ -286,3 +293,11 @@ class SaleReturnListAPIView(ListAPIView):
             .prefetch_related("items__product")
             .order_by("-created_at")
         )
+
+
+class CustomerListCreateAPIView(ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CustomerSerializer
+
+    def get_queryset(self):
+        return Customer.objects.all().order_by("name")

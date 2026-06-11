@@ -9,6 +9,7 @@ from apps.sales.models import (
     CashShift,
     SaleReturn,
     SaleReturnItem,
+    Customer
 )
 
 
@@ -227,4 +228,16 @@ class SaleItemSerializer(serializers.ModelSerializer):
             "product_name",
             "quantity",
             "price",
+        ]
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = [
+            "id",
+            "name",
+            "phone",
+            "email",
+            "customer_type",
         ]
