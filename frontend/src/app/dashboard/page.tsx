@@ -136,11 +136,12 @@ export default function DashboardPage() {
         <section className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6">
           <h2 className="text-xl font-semibold">Quick Actions</h2>
 
-          <div className="mt-4 grid gap-3 md:grid-cols-4">
+          <div className="mt-4 grid gap-3 md:grid-cols-5">
             <QuickAction label="Open POS" href="/pos" />
             <QuickAction label="Inventory" href="/inventory" />
             <QuickAction label="Sales" href="/sales" />
             <QuickAction label="Reports" href="/reports" />
+            <QuickAction label="Return Reviews" href="/return-reviews" />
           </div>
         </section>
         {riskyReturns.length > 0 && (
