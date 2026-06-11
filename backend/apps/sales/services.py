@@ -1,6 +1,7 @@
 from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
+from datetime import timedelta
 from apps.audit.services import create_audit_log
 from apps.audit.models import AuditLog
 
@@ -13,6 +14,37 @@ from apps.sales.models import (
     SaleReturn,
     SaleReturnItem,
 )
+
+
+def assess_return_risk(*, sale, total_refund_amount, receipt_verified=True):
+    risk_points = 0
+    notes = []
+
+    age = timezone.now() - sale.created_at
+
+    if not receipt_verified:
+        risk_points += 3
+        notes.append("Receipt was not verified.")
+
+    if age > timedelta(hours=24):
+        risk_points += 2
+        notes.append("Return is older than 24 hours.")
+
+    if total_refund_amount >= Decimal("2000.00"):
+        risk_points += 2
+        notes.append("High refund amount.")
+
+    if sale.cashier_id == sale.cash_shift.cashier_id if sale.cash_shift else False:
+        risk_points += 1
+        notes.append("Return linked to same cashier shift.")
+
+    if risk_points >= 4:
+        return SaleReturn.RiskLevel.HIGH, " ".join(notes)
+
+    if risk_points >= 2:
+        return SaleReturn.RiskLevel.MEDIUM, " ".join(notes)
+
+    return SaleReturn.RiskLevel.LOW, " ".join(notes)
 
 
 def generate_sale_number():
@@ -41,7 +73,6 @@ def process_checkout(
 
     if not open_shift:
         raise ValueError("You must open a cash shift before processing sales.")
-
     sale = Sale.objects.create(
         sale_number=generate_sale_number(),
         branch=branch,
@@ -57,10 +88,13 @@ def process_checkout(
         product = item["product"]
         quantity = Decimal(str(item["quantity"]))
 
-        stock = BranchStock.objects.select_for_update().get(
-            branch=branch,
-            product=product,
-        )
+        try:
+            stock = BranchStock.objects.select_for_update().get(
+                branch=branch,
+                product=product,
+            )
+        except BranchStock.DoesNotExist:
+            raise ValueError(f"{product.name} has no stock in {branch.name}.")
 
         if stock.quantity < quantity:
             raise ValueError(f"Insufficient stock for {product.name}")
@@ -143,7 +177,14 @@ def process_checkout(
 
 
 @transaction.atomic
-def process_sale_return(*, sale, returned_by, reason="", items=None):
+def process_sale_return(
+    *,
+    sale,
+    returned_by,
+    reason="",
+    items=None,
+    receipt_verified=True,
+):
     if not items:
         raise ValueError("Return must have at least one item.")
 
@@ -151,6 +192,8 @@ def process_sale_return(*, sale, returned_by, reason="", items=None):
         sale=sale,
         branch=sale.branch,
         returned_by=returned_by,
+        refund_processed_by=returned_by,
+        receipt_verified=receipt_verified,
         reason=reason,
         total_refund_amount=0,
     )
@@ -210,7 +253,15 @@ def process_sale_return(*, sale, returned_by, reason="", items=None):
                 notes=f"Return for {sale.sale_number}",
             )
 
+    risk_level, risk_notes = assess_return_risk(
+        sale=sale,
+        total_refund_amount=total_refund,
+        receipt_verified=receipt_verified,
+    )
+
     sale_return.total_refund_amount = total_refund
+    sale_return.refund_risk_level = risk_level
+    sale_return.risk_notes = risk_notes
     sale_return.save()
 
     create_audit_log(

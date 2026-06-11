@@ -196,6 +196,40 @@ class Payment(models.Model):
 
 
 class SaleReturn(models.Model):
+    class RiskLevel(models.TextChoices):
+        LOW = "LOW", "Low"
+        MEDIUM = "MEDIUM", "Medium"
+        HIGH = "HIGH", "High"
+
+    refund_processed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="processed_refunds",
+    )
+
+    receipt_verified = models.BooleanField(default=True)
+
+    refund_risk_level = models.CharField(
+        max_length=20,
+        choices=RiskLevel.choices,
+        default=RiskLevel.LOW,
+    )
+
+    risk_notes = models.TextField(blank=True)
+
+    manager_reviewed = models.BooleanField(default=False)
+
+    manager_reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_returns",
+    )
+
+    manager_reviewed_at = models.DateTimeField(null=True, blank=True)
     sale = models.ForeignKey(
         Sale,
         on_delete=models.CASCADE,

@@ -8,6 +8,7 @@ from django.db.models import Sum
 from apps.audit.models import AuditLog
 from apps.audit.services import create_audit_log
 from apps.sales.models import Customer
+from decimal import Decimal
 
 from apps.branches.models import Branch
 from apps.inventory.models import Product
@@ -174,17 +175,26 @@ class CloseCashShiftAPIView(APIView):
                 {"detail": "Shift is already closed."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
         cash_sales = (
-            shift.sales.filter(payments__payment_method="CASH").aggregate(
-                total=Sum("payments__amount")
-            )["total"]
-            or 0
+            shift.sales.filter(
+                payments__payment_method="CASH",
+            )
+            .distinct()
+            .aggregate(total=Sum("total_amount"))["total"]
+            or Decimal("0.00")
+        )
+
+        cash_refunds = (
+            SaleReturn.objects.filter(
+                sale__cash_shift=shift,
+            )
+            .aggregate(total=Sum("total_refund_amount"))["total"]
+            or Decimal("0.00")
         )
 
         closing_cash = serializer.validated_data["closing_cash"]
 
-        expected_cash = shift.opening_cash + cash_sales
+        expected_cash = shift.opening_cash + cash_sales - cash_refunds
         difference = closing_cash - expected_cash
 
         shift.closing_cash = closing_cash
@@ -249,6 +259,7 @@ class SaleReturnCreateAPIView(APIView):
         data = serializer.validated_data
 
         sale = get_object_or_404(Sale, id=data["sale_id"])
+        receipt_verified=data.get("receipt_verified", True),
 
         items = []
         for item in data["items"]:
@@ -269,6 +280,7 @@ class SaleReturnCreateAPIView(APIView):
                 sale=sale,
                 returned_by=request.user,
                 reason=data.get("reason", ""),
+                receipt_verified=data.get("receipt_verified", True),
                 items=items,
             )
         except ValueError as error:

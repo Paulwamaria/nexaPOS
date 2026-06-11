@@ -179,6 +179,7 @@ class SaleReturnItemInputSerializer(serializers.Serializer):
 class SaleReturnCreateSerializer(serializers.Serializer):
     sale_id = serializers.IntegerField()
     reason = serializers.CharField(required=False, allow_blank=True)
+    receipt_verified = serializers.BooleanField(default=True)
     items = SaleReturnItemInputSerializer(many=True)
 
 
@@ -211,6 +212,10 @@ class SaleReturnResponseSerializer(serializers.ModelSerializer):
             "returned_by",
             "created_at",
             "items",
+            "receipt_verified",
+            "refund_risk_level",
+            "risk_notes",
+            "manager_reviewed",
         ]
 
 
