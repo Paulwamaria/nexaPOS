@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   ShoppingCart,
   X,
+  AlertTriangle,
 } from "lucide-react";
 import { logout } from "@/lib/auth";
 
@@ -60,6 +61,12 @@ const navItems = [
     href: "/returns",
     icon: RotateCcw,
     roles: ["CASHIER", "ADMIN", "SUPERADMIN"],
+  },
+  {
+    label: "Return Reviews",
+    href: "/return-reviews",
+    icon: AlertTriangle,
+    roles: ["ADMIN", "SUPERADMIN"],
   },
   {
     label: "Reports",
