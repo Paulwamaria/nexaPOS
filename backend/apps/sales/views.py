@@ -27,7 +27,7 @@ from apps.sales.serializers import (
 from apps.sales.services import process_checkout, process_sale_return
 from rest_framework.generics import ListAPIView, RetrieveAPIView, ListCreateAPIView
 from apps.sales.models import Sale, CashShift, SaleReturn, SaleItem
-from apps.accounts.permissions import IsCashierOrAdmin
+from apps.accounts.permissions import IsCashierOrAdmin, IsAdminOrSuperAdmin
 
 
 class CheckoutAPIView(APIView):
@@ -305,7 +305,18 @@ class SaleReturnListAPIView(ListAPIView):
             .prefetch_related("items__product")
             .order_by("-created_at")
         )
+class SaleReturnReviewAPIView(APIView):
+    permission_classes = [IsAdminOrSuperAdmin]
 
+    def post(self, request, pk):
+        sale_return = get_object_or_404(SaleReturn, id=pk)
+
+        sale_return.manager_reviewed = True
+        sale_return.manager_reviewed_by = request.user
+        sale_return.manager_reviewed_at = timezone.now()
+        sale_return.save()
+
+        return Response(SaleReturnResponseSerializer(sale_return).data)
 
 class CustomerListCreateAPIView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]

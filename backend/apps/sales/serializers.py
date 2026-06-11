@@ -246,3 +246,5 @@ class CustomerSerializer(serializers.ModelSerializer):
             "email",
             "customer_type",
         ]
+class SaleReturnReviewSerializer(serializers.Serializer):
+    manager_reviewed = serializers.BooleanField(default=True)

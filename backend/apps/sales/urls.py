@@ -11,6 +11,7 @@ from .views import (
     SaleReturnCreateAPIView,
     SaleReturnListAPIView,
     CustomerListCreateAPIView,
+    SaleReturnReviewAPIView,
 )
 
 urlpatterns = [
@@ -33,5 +34,10 @@ urlpatterns = [
     ),
     path(
         "customers/", CustomerListCreateAPIView.as_view(), name="customer-list-create"
+    ),
+    path(
+        "returns/<int:pk>/review/",
+        SaleReturnReviewAPIView.as_view(),
+        name="sale-return-review",
     ),
 ]
