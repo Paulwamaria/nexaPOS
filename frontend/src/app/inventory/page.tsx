@@ -15,8 +15,13 @@ type Product = {
   id: number;
   name: string;
   sku: string;
+  category?: string;
+  category_id?: number;
+  cost_price: string;
   retail_price: string;
   wholesale_price: string;
+  wholesale_min_quantity?: number;
+  is_active?: boolean;
 };
 
 type Stock = {
@@ -48,6 +53,18 @@ export default function InventoryPage() {
   const [retailPrice, setRetailPrice] = useState("");
   const [wholesalePrice, setWholesalePrice] = useState("");
   const [openingStock, setOpeningStock] = useState("0");
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editSku, setEditSku] = useState("");
+  const [editCategoryId, setEditCategoryId] = useState("");
+  const [editCostPrice, setEditCostPrice] = useState("");
+  const [editRetailPrice, setEditRetailPrice] = useState("");
+  const [editWholesalePrice, setEditWholesalePrice] = useState("");
+  const [editWholesaleMinQuantity, setEditWholesaleMinQuantity] =
+    useState("10");
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
 
   const branchId = 2;
 
@@ -79,6 +96,72 @@ export default function InventoryPage() {
     ).length;
   }, [stocks]);
 
+  function openEditProduct(product: Product) {
+    setEditingProduct(product);
+    setEditName(product.name);
+    setEditSku(product.sku);
+    setEditCategoryId(String(product.category_id || ""));
+    setEditCostPrice(product.cost_price);
+    setEditRetailPrice(product.retail_price);
+    setEditWholesalePrice(product.wholesale_price);
+    setEditWholesaleMinQuantity(String(product.wholesale_min_quantity || 10));
+    setEditIsActive(product.is_active ?? true);
+  }
+
+  async function createCategory(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!newCategoryName.trim()) return;
+
+    setCreatingCategory(true);
+    setMessage("");
+
+    try {
+      const res = await api.post("/inventory/categories/", {
+        name: newCategoryName,
+      });
+
+      setMessage(`✓ Category ${newCategoryName} created.`);
+      setNewCategoryName("");
+
+      await loadInventory();
+
+      setCategoryId(String(res.data.id));
+    } catch (error: any) {
+      setMessage(error?.response?.data?.detail || "Failed to create category.");
+    } finally {
+      setCreatingCategory(false);
+    }
+  }
+
+  async function updateProduct(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!editingProduct) return;
+
+    setMessage("");
+
+    try {
+      await api.patch(`/inventory/products/${editingProduct.id}/`, {
+        category_id: Number(editCategoryId),
+        name: editName,
+        sku: editSku,
+        cost_price: editCostPrice,
+        retail_price: editRetailPrice,
+        wholesale_price: editWholesalePrice,
+        wholesale_min_quantity: Number(editWholesaleMinQuantity),
+        is_active: editIsActive,
+      });
+
+      setEditingProduct(null);
+      setMessage(`✓ ${editName} updated successfully.`);
+
+      loadInventory();
+    } catch (error: any) {
+      console.error("Update product error:", error?.response?.data || error);
+      setMessage(error?.response?.data?.detail || "Failed to update product.");
+    }
+  }
   async function createProduct(e: React.FormEvent) {
     e.preventDefault();
     setMessage("");
@@ -204,6 +287,7 @@ export default function InventoryPage() {
                       <th className="py-3">Branch</th>
                       <th className="py-3">Qty</th>
                       <th className="py-3">Reorder</th>
+                      <th className="py-3">Action</th>
                     </tr>
                   </thead>
 
@@ -229,6 +313,14 @@ export default function InventoryPage() {
                         <td className="py-3 text-slate-400">
                           {stock.reorder_level}
                         </td>
+                        <td className="py-3">
+                          <button
+                            onClick={() => openEditProduct(stock.product)}
+                            className="rounded-lg border border-white/10 px-3 py-2 text-xs hover:bg-white/10"
+                          >
+                            Edit
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -236,6 +328,33 @@ export default function InventoryPage() {
               </div>
             )}
           </div>
+
+          {/* create category form */}
+          <form
+            onSubmit={createCategory}
+            className="rounded-2xl border border-white/10 bg-white/5 p-5"
+          >
+            <h2 className="text-xl font-semibold">Create Category</h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Add a new product category for organizing your catalog.
+            </p>
+
+            <input
+              required
+              className="mt-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              placeholder="Category name e.g. Beverages"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+            />
+
+            <button
+              disabled={creatingCategory}
+              className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+            >
+              {creatingCategory ? "Creating..." : "Create Category"}
+            </button>
+          </form>
+          {/* create product form */}
           <form
             onSubmit={createProduct}
             className="rounded-2xl border border-white/10 bg-white/5 p-5"
@@ -370,6 +489,145 @@ export default function InventoryPage() {
               Save Adjustment
             </button>
           </form>
+
+          {editingProduct && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+              <form
+                onSubmit={updateProduct}
+                className="w-full max-w-xl rounded-2xl border border-white/10 bg-slate-950 p-6 text-white shadow-2xl"
+              >
+                <h2 className="text-2xl font-bold">Edit Product</h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  Update product details and pricing.
+                </p>
+
+                <input
+                  required
+                  className="mt-5 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Product name"
+                />
+
+                <input
+                  required
+                  className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                  value={editSku}
+                  onChange={(e) => setEditSku(e.target.value)}
+                  placeholder="SKU"
+                />
+
+                <select
+                  required
+                  value={editCategoryId}
+                  onChange={(e) => setEditCategoryId(e.target.value)}
+                  className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                >
+                  <option value="">Select category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+
+                <div className="mt-5 border-t border-white/10 pt-5">
+                  <h3 className="text-sm font-semibold text-emerald-400">
+                    Pricing
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Set how much the product costs and how much customers pay.
+                  </p>
+
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="text-sm text-slate-300">
+                        Cost Price (KES)
+                      </label>
+                      <input
+                        required
+                        value={editCostPrice}
+                        onChange={(e) => setEditCostPrice(e.target.value)}
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                      />
+                      <p className="mt-1 text-xs text-slate-500">
+                        What the business buys this product for.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-slate-300">
+                        Retail Price (KES)
+                      </label>
+                      <input
+                        required
+                        value={editRetailPrice}
+                        onChange={(e) => setEditRetailPrice(e.target.value)}
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                      />
+                      <p className="mt-1 text-xs text-slate-500">
+                        Normal selling price for walk-in customers.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-slate-300">
+                        Wholesale Price (KES)
+                      </label>
+                      <input
+                        required
+                        value={editWholesalePrice}
+                        onChange={(e) => setEditWholesalePrice(e.target.value)}
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                      />
+                      <p className="mt-1 text-xs text-slate-500">
+                        Discounted selling price for bulk buyers.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-slate-300">
+                        Wholesale Minimum Quantity
+                      </label>
+                      <input
+                        value={editWholesaleMinQuantity}
+                        onChange={(e) =>
+                          setEditWholesaleMinQuantity(e.target.value)
+                        }
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                      />
+                      <p className="mt-1 text-xs text-slate-500">
+                        Quantity needed before wholesale price applies.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <label className="mt-4 flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={editIsActive}
+                    onChange={(e) => setEditIsActive(e.target.checked)}
+                  />
+                  Active product
+                </label>
+
+                <div className="mt-6 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditingProduct(null)}
+                    className="flex-1 rounded-lg border border-white/10 px-4 py-3 hover:bg-white/10"
+                  >
+                    Cancel
+                  </button>
+
+                  <button className="flex-1 rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400">
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
         </section>
       </main>
     </AppShell>
