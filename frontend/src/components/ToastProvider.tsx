@@ -1,13 +1,13 @@
 // src/components/ToastProvider.tsx
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useRef } from "react";
 import { CheckCircle, AlertCircle, X } from "lucide-react";
 
 type ToastTone = "success" | "error" | "info";
 
 type Toast = {
-  id: number;
+  id: string;
   title: string;
   description?: string;
   tone: ToastTone;
@@ -21,9 +21,10 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastIdRef = useRef(0);
 
   function showToast(toast: Omit<Toast, "id">) {
-    const id = Date.now();
+    const id = `${Date.now()}-${++toastIdRef.current}`;
 
     setToasts((current) => [...current, { ...toast, id }]);
 

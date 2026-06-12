@@ -1,21 +1,21 @@
 "use client";
 
+import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  BarChart3,
-  Boxes,
-  LogOut,
-  Receipt,
-  Wallet,
-  RotateCcw,
-} from "lucide-react";
-import { api } from "@/lib/api";
+import { BarChart3, Receipt, Wallet, RotateCcw } from "lucide-react";
 import { logout } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { unwrapList } from "@/lib/pagination";
 import Link from "next/link";
+import { useToast } from "@/components/ToastProvider";
+
+type Activity = {
+  type: "SHIFT" | "PROCUREMENT" | "RETURN" | "INVENTORY" | "AUDIT";
+  message: string;
+  created_at: string;
+};
 
 type DashboardSummary = {
   sales_today: string;
@@ -59,9 +59,10 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [report, setReport] = useState<DashboardReport | null>(null);
   const [loading, setLoading] = useState(true);
-  const [riskyReturns, setRiskyReturns] = useState<SaleReturn[]>([]);
   const [attention, setAttention] = useState<AttentionData | null>(null);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const { showToast } = useToast();
 
   async function loadSummary() {
     try {
@@ -89,17 +90,25 @@ export default function DashboardPage() {
 
         setUser(meRes.data);
         setReport(reportRes.data);
-
-        setRiskyReturns(
-          unwrapList(returnsRes.data).filter(
-            (item: SaleReturn) =>
-              !item.manager_reviewed &&
-              ["MEDIUM", "HIGH"].includes(item.refund_risk_level),
-          ),
+      } catch (error: any) {
+        console.error(
+          "Dashboard base load failed:",
+          error?.response?.data || error,
         );
-      } catch {
-        logout();
-        router.push("/login");
+
+        if (error?.response?.status === 401) {
+          logout();
+          router.push("/login");
+          return;
+        }
+
+        showToast({
+          tone: "error",
+          title: "Dashboard load failed",
+          description:
+            error?.response?.data?.detail ||
+            "Some dashboard data could not load.",
+        });
       } finally {
         setLoading(false);
       }
@@ -122,10 +131,25 @@ export default function DashboardPage() {
     }
   }
 
+  async function loadActivity() {
+    try {
+      const res = await api.get("/reports/dashboard/activity/");
+      setActivities(res.data);
+    } catch (error: any) {
+      showToast({
+        tone: "error",
+        title: "Activity feed failed",
+        description:
+          error?.response?.data?.detail || "Unable to load recent activity.",
+      });
+    }
+  }
+
   useEffect(() => {
     if (!loading) {
-      loadAttention();
       loadSummary();
+      loadAttention();
+      loadActivity();
     }
   }, [loading]);
 
@@ -237,6 +261,22 @@ export default function DashboardPage() {
             <QuickAction label="Return Reviews" href="/return-reviews" />
           </div>
         </section>
+        <section className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6">
+          <h2 className="text-xl font-semibold">Recent Activity</h2>
+
+          <div className="mt-4 space-y-3">
+            {activities.map((activity, index) => (
+              <ActivityItem
+                key={`${activity.type}-${activity.created_at}-${index}`}
+                activity={activity}
+              />
+            ))}
+
+            {activities.length === 0 && (
+              <p className="text-sm text-slate-400">No recent activity yet.</p>
+            )}
+          </div>
+        </section>
       </main>
     </AppShell>
   );
@@ -345,5 +385,32 @@ function QuickAction({ label, href }: { label: string; href: string }) {
     >
       {label}
     </button>
+  );
+}
+
+function ActivityItem({ activity }: { activity: Activity }) {
+  const styles = {
+    SHIFT: "bg-emerald-500/20 text-emerald-300",
+    PROCUREMENT: "bg-sky-500/20 text-sky-300",
+    RETURN: "bg-orange-500/20 text-orange-300",
+    INVENTORY: "bg-violet-500/20 text-violet-300",
+    AUDIT: "bg-slate-500/20 text-slate-300",
+  };
+
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-900/60 p-4">
+      <div
+        className={`rounded-full px-3 py-1 text-xs font-semibold ${styles[activity.type]}`}
+      >
+        {activity.type}
+      </div>
+
+      <div>
+        <p className="text-sm font-medium text-white">{activity.message}</p>
+        <p className="mt-1 text-xs text-slate-400">
+          {new Date(activity.created_at).toLocaleString()}
+        </p>
+      </div>
+    </div>
   );
 }
