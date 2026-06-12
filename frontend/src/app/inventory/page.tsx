@@ -65,8 +65,23 @@ export default function InventoryPage() {
   const [editIsActive, setEditIsActive] = useState(true);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
 
   const branchId = 2;
+
+  const filteredStocks = useMemo(() => {
+    const q = productSearch.toLowerCase();
+
+    return stocks.filter((stock) => {
+      return (
+        stock.product.name.toLowerCase().includes(q) ||
+        stock.product.sku.toLowerCase().includes(q) ||
+        stock.branch.toLowerCase().includes(q)
+      );
+    });
+  }, [stocks, productSearch]);
 
   async function loadInventory() {
     setLoading(true);
@@ -87,7 +102,7 @@ export default function InventoryPage() {
   }
 
   useEffect(() => {
-    loadInventory();
+    loadInventory(1);
   }, []);
 
   const lowStockCount = useMemo(() => {
@@ -228,6 +243,31 @@ export default function InventoryPage() {
     }
   }
 
+  async function loadInventory(pageNumber = page) {
+    setLoading(true);
+
+    try {
+      const [stocksRes, productsRes, categoriesRes] = await Promise.all([
+        api.get(`/inventory/stocks/?page=${pageNumber}`),
+        api.get("/inventory/products/"),
+        api.get("/inventory/categories/"),
+      ]);
+
+      setStocks(unwrapList(stocksRes.data));
+      setProducts(unwrapList(productsRes.data));
+      setCategories(unwrapList(categoriesRes.data));
+
+      setCount(
+        Array.isArray(stocksRes.data)
+          ? stocksRes.data.length
+          : stocksRes.data.count,
+      );
+      setPage(pageNumber);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const { user, loadingUser } = useCurrentUser();
 
   if (loadingUser) {
@@ -274,57 +314,94 @@ export default function InventoryPage() {
         <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_420px]">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <h2 className="text-xl font-semibold">Stock Levels</h2>
+            <input
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              placeholder="Search product, SKU, or branch..."
+              className="mt-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3 outline-none focus:border-emerald-400"
+            />
 
             {loading ? (
               <p className="mt-4 text-slate-400">Loading inventory...</p>
             ) : (
               <div className="mt-4 overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="text-slate-400">
-                    <tr className="border-b border-white/10">
-                      <th className="py-3">Product</th>
-                      <th className="py-3">SKU</th>
-                      <th className="py-3">Branch</th>
-                      <th className="py-3">Qty</th>
-                      <th className="py-3">Reorder</th>
-                      <th className="py-3">Action</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {stocks.map((stock) => (
-                      <tr key={stock.id} className="border-b border-white/5">
-                        <td className="py-3 font-medium">
-                          {stock.product.name}
-                        </td>
-                        <td className="py-3 text-slate-400">
-                          {stock.product.sku}
-                        </td>
-                        <td className="py-3 text-slate-400">{stock.branch}</td>
-                        <td
-                          className={`py-3 font-semibold ${
-                            Number(stock.quantity) <= stock.reorder_level
-                              ? "text-red-300"
-                              : "text-emerald-300"
-                          }`}
-                        >
-                          {stock.quantity}
-                        </td>
-                        <td className="py-3 text-slate-400">
-                          {stock.reorder_level}
-                        </td>
-                        <td className="py-3">
-                          <button
-                            onClick={() => openEditProduct(stock.product)}
-                            className="rounded-lg border border-white/10 px-3 py-2 text-xs hover:bg-white/10"
-                          >
-                            Edit
-                          </button>
-                        </td>
+                {filteredStocks.length === 0 ? (
+                  <EmptyState
+                    title="No matching stocks found"
+                    description="Stock records will appear here after being added."
+                  />
+                ) : (
+                  <table className="w-full text-left text-sm">
+                    <thead className="text-slate-400">
+                      <tr className="border-b border-white/10">
+                        <th className="py-3">Product</th>
+                        <th className="py-3">SKU</th>
+                        <th className="py-3">Branch</th>
+                        <th className="py-3">Qty</th>
+                        <th className="py-3">Reorder</th>
+                        <th className="py-3">Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+
+                    <tbody>
+                      {filteredStocks.map((stock) => (
+                        <tr key={stock.id} className="border-b border-white/5">
+                          <td className="py-3 font-medium">
+                            {stock.product.name}
+                          </td>
+                          <td className="py-3 text-slate-400">
+                            {stock.product.sku}
+                          </td>
+                          <td className="py-3 text-slate-400">
+                            {stock.branch}
+                          </td>
+                          <td
+                            className={`py-3 font-semibold ${
+                              Number(stock.quantity) <= stock.reorder_level
+                                ? "text-red-300"
+                                : "text-emerald-300"
+                            }`}
+                          >
+                            {stock.quantity}
+                          </td>
+                          <td className="py-3 text-slate-400">
+                            {stock.reorder_level}
+                          </td>
+                          <td className="py-3">
+                            <button
+                              onClick={() => openEditProduct(stock.product)}
+                              className="rounded-lg border border-white/10 px-3 py-2 text-xs hover:bg-white/10"
+                            >
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                <div className="mt-4 flex items-center justify-between">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => loadInventory(page - 1)}
+                    className="rounded-lg border border-white/10 px-4 py-2 text-sm disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+
+                  <span className="text-sm text-slate-400">
+                    Page {page} · {count} stock records
+                  </span>
+
+                  <button
+                    disabled={page * 20 >= count}
+                    onClick={() => loadInventory(page + 1)}
+                    className="rounded-lg border border-white/10 px-4 py-2 text-sm disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
           </div>
