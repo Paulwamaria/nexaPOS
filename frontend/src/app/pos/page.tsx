@@ -9,6 +9,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { AlertMessage } from "@/components/AlertMessage";
 import { EmptyState } from "@/components/EmptyState";
 import { unwrapList } from "@/lib/pagination";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+
 type Product = {
   id: number;
   name: string;
@@ -100,6 +102,7 @@ export default function POSPage() {
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [confirmCloseShift, setConfirmCloseShift] = useState(false);
 
   async function loadPOS() {
     const stocksRes = await api.get(`/inventory/stocks/?branch_id=${branchId}`);
@@ -341,11 +344,11 @@ export default function POSPage() {
                 />
 
                 <button
-                  onClick={closeShift}
+                  onClick={() => setConfirmCloseShift(true)}
                   disabled={!closingCash || closingShift}
                   className="rounded-lg bg-red-400 px-5 py-3 font-semibold text-slate-950 hover:bg-red-300 disabled:opacity-50"
                 >
-                  {closingShift ? "Closing..." : "Close Shift"}
+                  Close Shift
                 </button>
               </div>
             </div>
@@ -576,6 +579,19 @@ export default function POSPage() {
             </div>
           </div>
         )}
+        <ConfirmDialog
+          open={confirmCloseShift}
+          title="Close Cash Shift?"
+          description={`You are about to close this shift with closing cash of KES ${closingCash}. NexaPOS will calculate expected cash and any difference.`}
+          confirmLabel="Close Shift"
+          tone="danger"
+          loading={closingShift}
+          onCancel={() => setConfirmCloseShift(false)}
+          onConfirm={async () => {
+            await closeShift();
+            setConfirmCloseShift(false);
+          }}
+        />
       </main>
     </AppShell>
   );
