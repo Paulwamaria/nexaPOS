@@ -13,6 +13,7 @@ from .views import (
     ProcurementCSVExportAPIView,
     DashboardAttentionAPIView,
     DashboardSummaryAPIView,
+    DashboardActivityAPIView,
 )
 
 urlpatterns = [
@@ -67,5 +68,10 @@ urlpatterns = [
         "dashboard/summary/",
         DashboardSummaryAPIView.as_view(),
         name="dashboard-summary",
+    ),
+    path(
+        "dashboard/activity/",
+        DashboardActivityAPIView.as_view(),
+        name="dashboard-activity",
     ),
 ]

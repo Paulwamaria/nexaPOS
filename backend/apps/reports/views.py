@@ -2,13 +2,14 @@ from django.db.models import Count, F, Sum, Avg
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from apps.accounts.permissions import IsAdminOrSuperAdmin
 from apps.expenses.models import Expense
-from apps.inventory.models import BranchStock
+from apps.inventory.models import BranchStock, StockMovement
 from apps.sales.models import Sale, SaleItem, CashShift, SaleReturn
 from apps.suppliers.models import PurchaseOrder
 from rest_framework.permissions import IsAuthenticated
+from apps.audit.models import AuditLog
+from apps.suppliers.models import PurchaseOrder
 
 from apps.reports.exports import (
     export_sales_csv,
@@ -299,3 +300,82 @@ class DashboardSummaryAPIView(APIView):
                 "average_basket": average_basket,
             }
         )
+
+
+class DashboardActivityAPIView(APIView):
+    permission_classes = [IsAdminOrSuperAdmin]
+
+    def get(self, request):
+        activities = []
+
+        for shift in (
+            CashShift.objects.select_related("cashier", "branch")
+            .filter(
+                status="CLOSED",
+                closed_at__isnull=False,
+            )
+            .order_by("-closed_at")[:5]
+        ):
+            activities.append(
+                {
+                    "type": "SHIFT",
+                    "message": f"{shift.cashier.full_name} closed a shift at {shift.branch.name} with difference KES {shift.difference}",
+                    "created_at": shift.closed_at,
+                }
+            )
+
+        for po in (
+            PurchaseOrder.objects.select_related("received_by", "branch")
+            .filter(
+                status="RECEIVED",
+                received_at__isnull=False,
+            )
+            .order_by("-received_at")[:5]
+        ):
+            activities.append(
+                {
+                    "type": "PROCUREMENT",
+                    "message": f"{po.received_by.full_name if po.received_by else 'Storekeeper'} received {po.order_number} at {po.branch.name}",
+                    "created_at": po.received_at,
+                }
+            )
+
+        for sale_return in (
+            SaleReturn.objects.select_related("manager_reviewed_by", "sale")
+            .filter(
+                manager_reviewed=True,
+                manager_reviewed_at__isnull=False,
+            )
+            .order_by("-manager_reviewed_at")[:5]
+        ):
+            activities.append(
+                {
+                    "type": "RETURN",
+                    "message": f"{sale_return.refund_risk_level} risk return for {sale_return.sale.sale_number} reviewed by {sale_return.manager_reviewed_by.full_name if sale_return.manager_reviewed_by else 'Admin'}",
+                    "created_at": sale_return.manager_reviewed_at,
+                }
+            )
+
+        for movement in StockMovement.objects.select_related(
+            "product", "branch", "created_by"
+        ).order_by("-created_at")[:5]:
+            activities.append(
+                {
+                    "type": "INVENTORY",
+                    "message": f"{movement.created_by.full_name if movement.created_by else 'User'} recorded {movement.movement_type} of {movement.quantity} {movement.product.name} at {movement.branch.name}",
+                    "created_at": movement.created_at,
+                }
+            )
+
+        for log in AuditLog.objects.select_related("user").order_by("-created_at")[:5]:
+            activities.append(
+                {
+                    "type": "AUDIT",
+                    "message": f"{log.user.full_name if log.user else 'System'} {log.action}: {log.description}",
+                    "created_at": log.created_at,
+                }
+            )
+
+        activities.sort(key=lambda item: item["created_at"], reverse=True)
+
+        return Response(activities[:10])
