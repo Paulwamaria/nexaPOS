@@ -24,6 +24,31 @@ type LowStockItem = {
   quantity: string;
   reorder_level: number;
 };
+function getStockUrgency(quantity: string, reorderLevel: number) {
+  const qty = Number(quantity);
+
+  if (qty <= 0) {
+    return {
+      label: "Critical",
+      className: "bg-red-500/20 text-red-200",
+      rank: 1,
+    };
+  }
+
+  if (qty <= reorderLevel / 2) {
+    return {
+      label: "Very Low",
+      className: "bg-orange-500/20 text-orange-200",
+      rank: 2,
+    };
+  }
+
+  return {
+    label: "Low",
+    className: "bg-yellow-500/20 text-yellow-200",
+    rank: 3,
+  };
+}
 
 export default function LowStockPage() {
   const router = useRouter();
@@ -40,7 +65,14 @@ export default function LowStockPage() {
 
       const itemsData = unwrapList(res.data);
 
-      setItems(itemsData);
+      const sortedItems = [...itemsData].sort((a, b) => {
+        const urgencyA = getStockUrgency(a.quantity, a.reorder_level).rank;
+        const urgencyB = getStockUrgency(b.quantity, b.reorder_level).rank;
+
+        return urgencyA - urgencyB;
+      });
+
+      setItems(sortedItems);
 
       setCount(Array.isArray(res.data) ? itemsData.length : res.data.count);
 
@@ -86,6 +118,7 @@ export default function LowStockPage() {
                   <th className="py-3 pr-4">SKU</th>
                   <th className="py-3 pr-4">Branch</th>
                   <th className="py-3 pr-4">Quantity</th>
+                  <th className="py-3 pr-4">Urgency</th>
                   <th className="py-3 pr-4">Reorder Level</th>
                   <th className="py-3 pr-4">Action</th>
                 </tr>
@@ -104,6 +137,22 @@ export default function LowStockPage() {
                     <td className="py-3 pr-4 font-semibold text-red-300">
                       {item.quantity}
                     </td>
+                    <td className="py-3 pr-4">
+                      {(() => {
+                        const urgency = getStockUrgency(
+                          item.quantity,
+                          item.reorder_level,
+                        );
+
+                        return (
+                          <span
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${urgency.className}`}
+                          >
+                            {urgency.label}
+                          </span>
+                        );
+                      })()}
+                    </td>
                     <td className="py-3 pr-4 text-slate-400">
                       {item.reorder_level}
                     </td>
@@ -120,7 +169,7 @@ export default function LowStockPage() {
 
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="py-6 text-slate-400">
+                    <td colSpan={7} className="py-6 text-slate-400">
                       No low stock items. Inventory looks healthy.
                     </td>
                   </tr>
