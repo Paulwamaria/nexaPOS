@@ -7,9 +7,9 @@ import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { PageHeader } from "@/components/PageHeader";
-import { AlertMessage } from "@/components/AlertMessage";
 import { EmptyState } from "@/components/EmptyState";
 import { unwrapList } from "@/lib/pagination";
+import { useToast } from "@/components/ToastProvider";
 
 type Product = {
   id: number;
@@ -42,7 +42,6 @@ export default function InventoryPage() {
     "ADJUSTMENT_IN" | "ADJUSTMENT_OUT"
   >("ADJUSTMENT_IN");
   const [notes, setNotes] = useState("");
-  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
 
@@ -71,6 +70,7 @@ export default function InventoryPage() {
   const [statusFilter, setStatusFilter] = useState<
     "ALL" | "ACTIVE" | "INACTIVE"
   >("ALL");
+  const { showToast } = useToast();
 
   const branchId = 2;
 
@@ -138,21 +138,31 @@ export default function InventoryPage() {
     if (!newCategoryName.trim()) return;
 
     setCreatingCategory(true);
-    setMessage("");
 
     try {
       const res = await api.post("/inventory/categories/", {
         name: newCategoryName,
       });
 
-      setMessage(`✓ Category ${newCategoryName} created.`);
+      showToast({
+        tone: "success",
+        title: "New Category Created",
+        description: `${newCategoryName} was created successfully.`,
+      });
+
       setNewCategoryName("");
 
       await loadInventory();
 
       setCategoryId(String(res.data.id));
     } catch (error: any) {
-      setMessage(error?.response?.data?.detail || "Failed to create category.");
+      showToast({
+        tone: "error",
+        title: "Create New Category failed",
+        description:
+          error?.response?.data?.detail ||
+          "Failed to create category, please try again.",
+      });
     } finally {
       setCreatingCategory(false);
     }
@@ -162,8 +172,6 @@ export default function InventoryPage() {
     e.preventDefault();
 
     if (!editingProduct) return;
-
-    setMessage("");
 
     try {
       await api.patch(`/inventory/products/${editingProduct.id}/`, {
@@ -178,17 +186,23 @@ export default function InventoryPage() {
       });
 
       setEditingProduct(null);
-      setMessage(`✓ ${editName} updated successfully.`);
+      showToast({
+        tone: "success",
+        title: "Product updated",
+        description: `${editName} was updated successfully.`,
+      });
 
       loadInventory();
     } catch (error: any) {
-      console.error("Update product error:", error?.response?.data || error);
-      setMessage(error?.response?.data?.detail || "Failed to update product.");
+      showToast({
+        tone: "error",
+        title: "Update failed",
+        description: error?.response?.data?.detail || "Please try again.",
+      });
     }
   }
   async function createProduct(e: React.FormEvent) {
     e.preventDefault();
-    setMessage("");
 
     try {
       const productRes = await api.post("/inventory/products/", {
@@ -213,8 +227,11 @@ export default function InventoryPage() {
           notes: "Opening stock",
         });
       }
-
-      setMessage("Product created successfully.");
+      showToast({
+        tone: "success",
+        title: "Product created",
+        description: `${productName} was created successfully.`,
+      });
       setProductName("");
       setSku("");
       setCategoryId("");
@@ -225,13 +242,18 @@ export default function InventoryPage() {
 
       await loadInventory();
     } catch (error: any) {
-      setMessage(error?.response?.data?.detail || "Failed to create product.");
+      showToast({
+        tone: "error",
+        title: "Create Produce Failed!",
+        description:
+          error?.response?.data?.detail ||
+          "Failed to create product, please try again.",
+      });
     }
   }
 
   async function adjustStock(e: React.FormEvent) {
     e.preventDefault();
-    setMessage("");
 
     try {
       await api.post("/inventory/adjust-stock/", {
@@ -241,14 +263,23 @@ export default function InventoryPage() {
         adjustment_type: adjustmentType,
         notes,
       });
-
-      setMessage("Stock adjusted successfully.");
+      showToast({
+        tone: "success",
+        title: "Stock Adjusted",
+        description: `Stock was adjusted successfully.`,
+      });
       setSelectedProductId("");
       setQuantity("1");
       setNotes("");
       await loadInventory();
     } catch (error: any) {
-      setMessage(error?.response?.data?.detail || "Stock adjustment failed.");
+      showToast({
+        tone: "error",
+        title: "Stock adjustment failed",
+        description:
+          error?.response?.data?.detail ||
+          "Stock adjustment failed, please try again.",
+      });
     }
   }
 
@@ -296,8 +327,6 @@ export default function InventoryPage() {
             description="Manage branch stock levels and inventory adjustments."
           />
         </div>
-
-        {message && <AlertMessage message={message} />}
 
         <section className="grid gap-4 md:grid-cols-3">
           <InventoryCard

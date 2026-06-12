@@ -4,10 +4,10 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
-import { AlertMessage } from "@/components/AlertMessage";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { api } from "@/lib/api";
 import { unwrapList } from "@/lib/pagination";
+import { useToast } from "@/components/ToastProvider";
 
 type CashShift = {
   id: number;
@@ -26,7 +26,7 @@ export default function ShiftsPage() {
   const { user, loadingUser } = useCurrentUser();
 
   const [shifts, setShifts] = useState<CashShift[]>([]);
-  const [message, setMessage] = useState("");
+  const { showToast } = useToast();
 
   async function loadShifts() {
     try {
@@ -34,7 +34,13 @@ export default function ShiftsPage() {
       const shiftsData = unwrapList(res.data);
       setShifts(shiftsData);
     } catch {
-      setMessage("Failed to load shifts.");
+      showToast({
+        tone: "error",
+        title: "Loading shifts failed",
+        description:
+          error?.response?.data?.detail ||
+          "Failed to load shifts, please try again.",
+      });
     }
   }
 
@@ -59,8 +65,6 @@ export default function ShiftsPage() {
           title="Shift History"
           description="Review cashier shift openings, closings, and cash differences."
         />
-
-        <AlertMessage message={message} tone="error" />
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
           <div className="overflow-x-auto">

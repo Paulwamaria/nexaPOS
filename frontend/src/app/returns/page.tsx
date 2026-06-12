@@ -6,10 +6,10 @@ import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { PageHeader } from "@/components/PageHeader";
-import { AlertMessage } from "@/components/AlertMessage";
 import { EmptyState } from "@/components/EmptyState";
 import { unwrapList } from "@/lib/pagination";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useToast } from "@/components/ToastProvider";
 
 type Sale = {
   id: number;
@@ -38,10 +38,10 @@ export default function ReturnsPage() {
   const [quantity, setQuantity] = useState("1");
   const [reason, setReason] = useState("");
   const [restock, setRestock] = useState(true);
-  const [message, setMessage] = useState("");
   const [receiptVerified, setReceiptVerified] = useState(true);
   const [confirmReturn, setConfirmReturn] = useState(false);
   const [processingReturn, setProcessingReturn] = useState(false);
+  const { showToast } = useToast();
 
   async function loadSales() {
     const res = await api.get("/sales/");
@@ -56,20 +56,25 @@ export default function ReturnsPage() {
     setSelectedSaleId(id);
     setSelectedItemId("");
     setSaleDetail(null);
-    setMessage("");
 
     if (!id) return;
 
     try {
       const res = await api.get(`/sales/${id}/`);
-      console.log("Sale detail:", res.data);
+      showToast({
+        tone: "success",
+        title: "Sale Detail Loaded",
+        description: `Sale detail was loaded successfully.`,
+      });
       setSaleDetail(res.data);
     } catch (error: any) {
-      console.error(
-        "Failed to load sale detail:",
-        error?.response?.data || error,
-      );
-      setMessage("Failed to load sale details.");
+      showToast({
+        tone: "error",
+        title: "Sale Details Failed",
+        description:
+          error?.response?.data?.detail ||
+          "Failed to load sale details, please try again.",
+      });
     }
   }
 
@@ -84,7 +89,6 @@ export default function ReturnsPage() {
 
   async function submitReturn() {
     setProcessingReturn(true);
-    setMessage("");
 
     try {
       const res = await api.post("/sales/returns/create/", {
@@ -99,10 +103,11 @@ export default function ReturnsPage() {
           },
         ],
       });
-
-      setMessage(
-        `Return processed. Refund: KES ${res.data.total_refund_amount}. Risk: ${res.data.refund_risk_level}`,
-      );
+      showToast({
+        tone: "success",
+        title: "Return Processed",
+        description: `Return processed. Refund: KES ${res.data.total_refund_amount}. Risk: ${res.data.refund_risk_level}`,
+      });
 
       setConfirmReturn(false);
       setSelectedSaleId("");
@@ -114,7 +119,12 @@ export default function ReturnsPage() {
       setReceiptVerified(true);
       await loadSales();
     } catch (error: any) {
-      setMessage(error?.response?.data?.detail || "Return failed.");
+      showToast({
+        tone: "error",
+        title: "Return process failed",
+        description:
+          error?.response?.data?.detail || "Return failed, please try again.",
+      });
     } finally {
       setProcessingReturn(false);
     }
@@ -138,8 +148,6 @@ export default function ReturnsPage() {
             description="Manage customer returns and restock inventory."
           />
         </div>
-
-        {message && <AlertMessage message={message} />}
 
         <section className="grid gap-6 lg:grid-cols-[1fr_420px]">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-5">

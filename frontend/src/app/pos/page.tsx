@@ -6,10 +6,9 @@ import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { PageHeader } from "@/components/PageHeader";
-import { AlertMessage } from "@/components/AlertMessage";
-import { EmptyState } from "@/components/EmptyState";
 import { unwrapList } from "@/lib/pagination";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useToast } from "@/components/ToastProvider";
 
 type Product = {
   id: number;
@@ -89,7 +88,6 @@ export default function POSPage() {
   const [branchId] = useState(2);
   const [saleType, setSaleType] = useState<"RETAIL" | "WHOLESALE">("RETAIL");
   const [cashAmount, setCashAmount] = useState("");
-  const [message, setMessage] = useState("");
   const [currentShift, setCurrentShift] = useState<CashShift | null>(null);
   const [openingCash, setOpeningCash] = useState("1000.00");
   const [receipt, setReceipt] = useState<SaleReceipt | null>(null);
@@ -103,6 +101,7 @@ export default function POSPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [confirmCloseShift, setConfirmCloseShift] = useState(false);
+  const { showToast } = useToast();
 
   async function loadPOS() {
     const stocksRes = await api.get(`/inventory/stocks/?branch_id=${branchId}`);
@@ -167,7 +166,11 @@ export default function POSPage() {
 
     addToCart(stock.product);
     setBarcode("");
-    setMessage(`Added ${stock.product.name} to cart.`);
+    showToast({
+      tone: "success",
+      title: "Product updated",
+      description: `${stock.product.name} was added successfully to cart.`,
+    });
   }
 
   function addToCart(product: Product) {
@@ -196,7 +199,6 @@ export default function POSPage() {
     if (checkingOut) return;
 
     setCheckingOut(true);
-    setMessage("");
 
     try {
       const response = await api.post("/sales/checkout/", {
@@ -218,27 +220,26 @@ export default function POSPage() {
       const receiptRes = await api.get(`/sales/${response.data.id}/`);
 
       setReceipt(receiptRes.data);
-      setMessage(`Sale complete: ${response.data.sale_number}`);
+      showToast({
+        tone: "success",
+        title: "Sale complete",
+        description: `Sale complete: ${response.data.sale_number}`,
+      });
       setCart([]);
       setCashAmount("");
       await loadPOS();
     } catch (error: any) {
-      console.error("Checkout error:", error?.response?.data || error);
-
-      const detail =
-        error?.response?.data?.detail ||
-        JSON.stringify(error?.response?.data) ||
-        "Checkout failed.";
-
-      setMessage(detail);
+      showToast({
+        tone: "error",
+        title: "Checkout failed",
+        description: error?.response?.data?.detail || "Please try again.",
+      });
     } finally {
       setCheckingOut(false);
     }
   }
 
   async function openShift() {
-    setMessage("");
-
     try {
       const res = await api.post("/sales/shifts/open/", {
         branch: branchId,
@@ -246,9 +247,19 @@ export default function POSPage() {
       });
 
       setCurrentShift(res.data);
-      setMessage("Shift opened successfully.");
+      showToast({
+        tone: "success",
+        title: "Shift Openend",
+        description: `Shift opened successfully.`,
+      });
     } catch (error: any) {
-      setMessage(error?.response?.data?.detail || "Failed to open shift.");
+      showToast({
+        tone: "error",
+        title: "Update failed",
+        description:
+          error?.response?.data?.detail ||
+          "Failed to ope shift, please try again.",
+      });
     }
   }
 
@@ -256,21 +267,27 @@ export default function POSPage() {
     if (!currentShift) return;
 
     setClosingShift(true);
-    setMessage("");
 
     try {
       const res = await api.post(`/sales/shifts/${currentShift.id}/close/`, {
         closing_cash: closingCash,
       });
-
-      setMessage(
-        `Shift closed. Expected: KES ${res.data.expected_cash}, Difference: KES ${res.data.difference}`,
-      );
+      showToast({
+        tone: "success",
+        title: "Shift Closed",
+        description: `Shift closed. Expected: KES ${res.data.expected_cash}, Difference: KES ${res.data.difference}`,
+      });
 
       setCurrentShift(null);
       setClosingCash("");
     } catch (error: any) {
-      setMessage(error?.response?.data?.detail || "Failed to close shift.");
+      showToast({
+        tone: "error",
+        title: "Update failed",
+        description:
+          error?.response?.data?.detail ||
+          "Failed to close shift, please try again.",
+      });
     } finally {
       setClosingShift(false);
     }
@@ -293,8 +310,6 @@ export default function POSPage() {
           title="POS Terminal"
           description="Manage branch sales and transactions."
         />
-
-        {message && <AlertMessage message={message} />}
 
         {!currentShift && (
           <section className="mb-6 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-5">

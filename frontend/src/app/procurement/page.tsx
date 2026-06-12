@@ -6,10 +6,10 @@ import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { PageHeader } from "@/components/PageHeader";
-import { AlertMessage } from "@/components/AlertMessage";
 import { EmptyState } from "@/components/EmptyState";
 import { unwrapList } from "@/lib/pagination";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useToast } from "@/components/ToastProvider";
 type Supplier = {
   id: number;
   name: string;
@@ -48,33 +48,42 @@ export default function ProcurementPage() {
   const [quantity, setQuantity] = useState("1");
   const [costPrice, setCostPrice] = useState("0");
 
-  const [message, setMessage] = useState("");
   const [poToReceive, setPoToReceive] = useState<PurchaseOrder | null>(null);
   const [receivingPO, setReceivingPO] = useState(false);
+  const { showToast } = useToast();
 
   async function loadData() {
     try {
       const suppliersRes = await api.get("/procurement/suppliers/");
-      console.log("Suppliers OK");
       setSuppliers(unwrapList(suppliersRes.data));
     } catch (err) {
-      console.error("Suppliers failed", err);
+      showToast({
+        tone: "error",
+        title: "Loading data failed",
+        description: error?.response?.data?.detail || "Please try again.",
+      });
     }
 
     try {
       const productsRes = await api.get("/inventory/products/");
-      console.log("Products OK");
       setProducts(unwrapList(productsRes.data));
     } catch (err) {
-      console.error("Products failed", err);
+      showToast({
+        tone: "error",
+        title: "Loading products failed",
+        description: error?.response?.data?.detail || "Please try again.",
+      });
     }
 
     try {
       const poRes = await api.get("/procurement/purchase-orders/");
-      console.log("POs OK");
       setPurchaseOrders(unwrapList(poRes.data));
     } catch (err) {
-      console.error("POs failed", err);
+      showToast({
+        tone: "error",
+        title: "Loading POS failed",
+        description: error?.response?.data?.detail || "Please try again.",
+      });
     }
   }
 
@@ -84,7 +93,6 @@ export default function ProcurementPage() {
 
   async function createSupplier(e: React.FormEvent) {
     e.preventDefault();
-    setMessage("");
 
     try {
       await api.post("/procurement/suppliers/", {
@@ -99,16 +107,25 @@ export default function ProcurementPage() {
       setSupplierName("");
       setSupplierPhone("");
       setSupplierEmail("");
-      setMessage("Supplier created successfully.");
+      showToast({
+        tone: "success",
+        title: "Supplier created",
+        description: `New supplier was created successfully.`,
+      });
       await loadData();
     } catch {
-      setMessage("Failed to create supplier.");
+      showToast({
+        tone: "error",
+        title: "Create Supplier Failed",
+        description:
+          error?.response?.data?.detail ||
+          "Failed to create new supplier, please try again.",
+      });
     }
   }
 
   async function createPurchaseOrder(e: React.FormEvent) {
     e.preventDefault();
-    setMessage("");
 
     try {
       await api.post("/procurement/purchase-orders/", {
@@ -127,28 +144,43 @@ export default function ProcurementPage() {
       setSelectedProductId("");
       setQuantity("1");
       setCostPrice("0");
-      setMessage("Purchase order created successfully.");
+      showToast({
+        tone: "success",
+        title: "Purchase Order Created",
+        description: `New purchase order was created successfully.`,
+      });
       await loadData();
     } catch (error: any) {
-      setMessage(
-        error?.response?.data?.detail || "Failed to create purchase order.",
-      );
+      showToast({
+        tone: "error",
+        title: "Purchase order failed",
+        description:
+          error?.response?.data?.detail ||
+          "Failed to create purchase order, please try again.",
+      });
     }
   }
 
   async function receivePurchaseOrder(id: number) {
     setReceivingPO(true);
-    setMessage("");
 
     try {
       await api.post(`/procurement/purchase-orders/${id}/receive/`);
-      setMessage("Purchase order received successfully.");
+      showToast({
+        tone: "success",
+        title: "Purchase Order",
+        description: `Purchase order received successfully.`,
+      });
       setPoToReceive(null);
       await loadData();
     } catch (error: any) {
-      setMessage(
-        error?.response?.data?.detail || "Failed to receive purchase order.",
-      );
+      showToast({
+        tone: "error",
+        title: "Purchase order failed",
+        description:
+          error?.response?.data?.detail ||
+          "Failed to recieve purchase order, please try again.",
+      });
     } finally {
       setReceivingPO(false);
     }
@@ -172,8 +204,6 @@ export default function ProcurementPage() {
             description="Manage suppliers, purchase orders, and goods receiving."
           />
         </div>
-
-        {message && <AlertMessage message={message} />}
 
         <section className="grid gap-6 xl:grid-cols-2">
           <form
