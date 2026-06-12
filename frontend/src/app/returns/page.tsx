@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { AlertMessage } from "@/components/AlertMessage";
 import { EmptyState } from "@/components/EmptyState";
 import { unwrapList } from "@/lib/pagination";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 type Sale = {
   id: number;
@@ -39,6 +40,8 @@ export default function ReturnsPage() {
   const [restock, setRestock] = useState(true);
   const [message, setMessage] = useState("");
   const [receiptVerified, setReceiptVerified] = useState(true);
+  const [confirmReturn, setConfirmReturn] = useState(false);
+  const [processingReturn, setProcessingReturn] = useState(false);
 
   async function loadSales() {
     const res = await api.get("/sales/");
@@ -53,11 +56,21 @@ export default function ReturnsPage() {
     setSelectedSaleId(id);
     setSelectedItemId("");
     setSaleDetail(null);
+    setMessage("");
 
     if (!id) return;
 
-    const res = await api.get(`/sales/${id}/`);
-    setSaleDetail(unwrapList(res.data));
+    try {
+      const res = await api.get(`/sales/${id}/`);
+      console.log("Sale detail:", res.data);
+      setSaleDetail(res.data);
+    } catch (error: any) {
+      console.error(
+        "Failed to load sale detail:",
+        error?.response?.data || error,
+      );
+      setMessage("Failed to load sale details.");
+    }
   }
 
   const selectedItem = useMemo(() => {
@@ -69,8 +82,8 @@ export default function ReturnsPage() {
     return Number(selectedItem.unit_price) * Number(quantity || 0);
   }, [selectedItem, quantity]);
 
-  async function submitReturn(e: React.FormEvent) {
-    e.preventDefault();
+  async function submitReturn() {
+    setProcessingReturn(true);
     setMessage("");
 
     try {
@@ -90,15 +103,20 @@ export default function ReturnsPage() {
       setMessage(
         `Return processed. Refund: KES ${res.data.total_refund_amount}. Risk: ${res.data.refund_risk_level}`,
       );
+
+      setConfirmReturn(false);
       setSelectedSaleId("");
       setSaleDetail(null);
       setSelectedItemId("");
       setQuantity("1");
       setReason("");
       setRestock(true);
+      setReceiptVerified(true);
       await loadSales();
     } catch (error: any) {
       setMessage(error?.response?.data?.detail || "Return failed.");
+    } finally {
+      setProcessingReturn(false);
     }
   }
 
@@ -156,7 +174,10 @@ export default function ReturnsPage() {
           </div>
 
           <form
-            onSubmit={submitReturn}
+            onSubmit={(e) => {
+              e.preventDefault();
+              setConfirmReturn(true);
+            }}
             className="rounded-2xl border border-white/10 bg-white/5 p-5"
           >
             <h2 className="text-xl font-semibold">Process Return</h2>
@@ -247,6 +268,18 @@ export default function ReturnsPage() {
             )}
           </form>
         </section>
+        <ConfirmDialog
+          open={confirmReturn}
+          title="Process Customer Return?"
+          description={`This will refund approximately KES ${refundAmount.toFixed(
+            2,
+          )}. The customer can leave immediately, but NexaPOS will score this return for manager review.`}
+          confirmLabel="Process Return"
+          tone="danger"
+          loading={processingReturn}
+          onCancel={() => setConfirmReturn(false)}
+          onConfirm={submitReturn}
+        />
       </main>
     </AppShell>
   );
