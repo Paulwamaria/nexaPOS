@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Clock,
   AlertCircle,
+  Wallet,
 } from "lucide-react";
 import { logout } from "@/lib/auth";
 
@@ -77,11 +78,17 @@ const navItems = [
     roles: ["ADMIN", "SUPERADMIN"],
   },
   {
-  label: "Low Stock",
-  href: "/low-stock",
-  icon: AlertCircle,
-  roles: ["STORE_KEEPER", "ADMIN", "SUPERADMIN"],
-},
+    label: "Low Stock",
+    href: "/low-stock",
+    icon: AlertCircle,
+    roles: ["STORE_KEEPER", "ADMIN", "SUPERADMIN"],
+  },
+  {
+    label: "Expenses",
+    href: "/expenses",
+    icon: Wallet,
+    roles: ["ADMIN", "SUPERADMIN"],
+  },
   {
     label: "Reports",
     href: "/reports",
