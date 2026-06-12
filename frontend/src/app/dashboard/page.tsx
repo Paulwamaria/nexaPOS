@@ -3,7 +3,17 @@
 import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BarChart3, Receipt, Wallet, RotateCcw } from "lucide-react";
+import {
+  BarChart3,
+  Receipt,
+  Wallet,
+  Boxes,
+  Clock3,
+  FileText,
+  RotateCcw,
+  ShieldCheck,
+  Truck,
+} from "lucide-react";
 import { logout } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
@@ -273,7 +283,13 @@ export default function DashboardPage() {
             ))}
 
             {activities.length === 0 && (
-              <p className="text-sm text-slate-400">No recent activity yet.</p>
+              <div className="rounded-xl border border-dashed border-white/10 bg-slate-900/40 p-6 text-center">
+                <p className="font-medium text-white">No recent activity yet</p>
+                <p className="mt-1 text-sm text-slate-400">
+                  Team actions like shift closures, received purchase orders,
+                  returns, and inventory updates will appear here.
+                </p>
+              </div>
             )}
           </div>
         </section>
@@ -389,26 +405,58 @@ function QuickAction({ label, href }: { label: string; href: string }) {
 }
 
 function ActivityItem({ activity }: { activity: Activity }) {
-  const styles = {
-    SHIFT: "bg-emerald-500/20 text-emerald-300",
-    PROCUREMENT: "bg-sky-500/20 text-sky-300",
-    RETURN: "bg-orange-500/20 text-orange-300",
-    INVENTORY: "bg-violet-500/20 text-violet-300",
-    AUDIT: "bg-slate-500/20 text-slate-300",
+  const config = {
+    SHIFT: {
+      label: "Shift",
+      icon: Clock3,
+      className: "bg-emerald-500/20 text-emerald-300",
+    },
+    PROCUREMENT: {
+      label: "Procurement",
+      icon: Truck,
+      className: "bg-sky-500/20 text-sky-300",
+    },
+    RETURN: {
+      label: "Return",
+      icon: RotateCcw,
+      className: "bg-orange-500/20 text-orange-300",
+    },
+    INVENTORY: {
+      label: "Inventory",
+      icon: Boxes,
+      className: "bg-violet-500/20 text-violet-300",
+    },
+    AUDIT: {
+      label: "Audit",
+      icon: ShieldCheck,
+      className: "bg-slate-500/20 text-slate-300",
+    },
   };
 
+  const item = config[activity.type];
+  const Icon = item.icon;
+
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-900/60 p-4">
-      <div
-        className={`rounded-full px-3 py-1 text-xs font-semibold ${styles[activity.type]}`}
-      >
-        {activity.type}
+    <div className="flex items-start gap-4 rounded-xl border border-white/10 bg-slate-900/60 p-4 transition hover:bg-slate-900">
+      <div className={`rounded-xl p-2 ${item.className}`}>
+        <Icon size={18} />
       </div>
 
-      <div>
-        <p className="text-sm font-medium text-white">{activity.message}</p>
-        <p className="mt-1 text-xs text-slate-400">
-          {new Date(activity.created_at).toLocaleString()}
+      <div className="flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`rounded-full px-2 py-1 text-xs font-semibold ${item.className}`}
+          >
+            {item.label}
+          </span>
+
+          <span className="text-xs text-slate-500">
+            {new Date(activity.created_at).toLocaleString()}
+          </span>
+        </div>
+
+        <p className="mt-2 text-sm leading-6 text-slate-200">
+          {activity.message}
         </p>
       </div>
     </div>
