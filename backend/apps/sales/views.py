@@ -3,13 +3,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
+from decimal import Decimal
+from django.db.models import Avg, Count, Sum
 from django.utils import timezone
-from django.db.models import Sum
+from apps.sales.models import Sale, SaleReturn
 from apps.audit.models import AuditLog
 from apps.audit.services import create_audit_log
 from apps.sales.models import Customer
-from decimal import Decimal
-
 from apps.branches.models import Branch
 from apps.inventory.models import Product
 from apps.sales.serializers import (
@@ -175,22 +175,15 @@ class CloseCashShiftAPIView(APIView):
                 {"detail": "Shift is already closed."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        cash_sales = (
-            shift.sales.filter(
-                payments__payment_method="CASH",
-            )
-            .distinct()
-            .aggregate(total=Sum("total_amount"))["total"]
-            or Decimal("0.00")
-        )
+        cash_sales = shift.sales.filter(
+            payments__payment_method="CASH",
+        ).distinct().aggregate(total=Sum("total_amount"))["total"] or Decimal("0.00")
 
-        cash_refunds = (
-            SaleReturn.objects.filter(
-                sale__cash_shift=shift,
-            )
-            .aggregate(total=Sum("total_refund_amount"))["total"]
-            or Decimal("0.00")
-        )
+        cash_refunds = SaleReturn.objects.filter(
+            sale__cash_shift=shift,
+        ).aggregate(
+            total=Sum("total_refund_amount")
+        )["total"] or Decimal("0.00")
 
         closing_cash = serializer.validated_data["closing_cash"]
 
@@ -259,7 +252,7 @@ class SaleReturnCreateAPIView(APIView):
         data = serializer.validated_data
 
         sale = get_object_or_404(Sale, id=data["sale_id"])
-        receipt_verified=data.get("receipt_verified", True),
+        receipt_verified = (data.get("receipt_verified", True),)
 
         items = []
         for item in data["items"]:
@@ -305,6 +298,8 @@ class SaleReturnListAPIView(ListAPIView):
             .prefetch_related("items__product")
             .order_by("-created_at")
         )
+
+
 class SaleReturnReviewAPIView(APIView):
     permission_classes = [IsAdminOrSuperAdmin]
 
@@ -317,6 +312,7 @@ class SaleReturnReviewAPIView(APIView):
         sale_return.save()
 
         return Response(SaleReturnResponseSerializer(sale_return).data)
+
 
 class CustomerListCreateAPIView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]

@@ -1,4 +1,4 @@
-from django.db.models import Count, F, Sum
+from django.db.models import Count, F, Sum, Avg
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -252,5 +252,50 @@ class DashboardAttentionAPIView(APIView):
                 "pending_returns": pending_returns,
                 "open_shifts": open_shifts,
                 "pending_purchase_orders": pending_purchase_orders,
+            }
+        )
+
+
+class DashboardSummaryAPIView(APIView):
+    permission_classes = [IsAdminOrSuperAdmin]
+
+    def get(self, request):
+        today = timezone.localdate()
+
+        today_sales = Sale.objects.filter(
+            created_at__date=today,
+        )
+
+        sales_today = today_sales.aggregate(
+            total=Sum("total_amount"),
+        )[
+            "total"
+        ] or Decimal("0.00")
+
+        transactions_today = (
+            today_sales.aggregate(
+                total=Count("id"),
+            )["total"]
+            or 0
+        )
+
+        returns_today = SaleReturn.objects.filter(
+            created_at__date=today,
+        ).aggregate(
+            total=Sum("total_refund_amount"),
+        )["total"] or Decimal("0.00")
+
+        average_basket = today_sales.aggregate(
+            avg=Avg("total_amount"),
+        )[
+            "avg"
+        ] or Decimal("0.00")
+
+        return Response(
+            {
+                "sales_today": sales_today,
+                "transactions_today": transactions_today,
+                "returns_today": returns_today,
+                "average_basket": average_basket,
             }
         )
