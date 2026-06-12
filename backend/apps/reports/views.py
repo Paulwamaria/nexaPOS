@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from apps.accounts.permissions import IsAdminOrSuperAdmin
 from apps.expenses.models import Expense
 from apps.inventory.models import BranchStock
-from apps.sales.models import Sale, SaleItem
+from apps.sales.models import Sale, SaleItem, CashShift, SaleReturn
 from apps.suppliers.models import PurchaseOrder
 from rest_framework.permissions import IsAuthenticated
 
@@ -223,3 +223,34 @@ class ProcurementCSVExportAPIView(APIView):
 
     def get(self, request):
         return export_procurement_csv(request)
+
+
+class DashboardAttentionAPIView(APIView):
+    permission_classes = [IsAdminOrSuperAdmin]
+
+    def get(self, request):
+        critical_low_stock = BranchStock.objects.filter(
+            quantity__lte=F("reorder_level")
+        ).count()
+
+        pending_returns = SaleReturn.objects.filter(
+            manager_reviewed=False,
+            refund_risk_level__in=["MEDIUM", "HIGH"],
+        ).count()
+
+        open_shifts = CashShift.objects.filter(
+            status="OPEN",
+        ).count()
+
+        pending_purchase_orders = PurchaseOrder.objects.exclude(
+            status="RECEIVED",
+        ).count()
+
+        return Response(
+            {
+                "critical_low_stock": critical_low_stock,
+                "pending_returns": pending_returns,
+                "open_shifts": open_shifts,
+                "pending_purchase_orders": pending_purchase_orders,
+            }
+        )

@@ -11,6 +11,7 @@ from .views import (
     InventoryCSVExportAPIView,
     AuditLogsCSVExportAPIView,
     ProcurementCSVExportAPIView,
+    DashboardAttentionAPIView,
 )
 
 urlpatterns = [
@@ -55,5 +56,10 @@ urlpatterns = [
         "exports/procurement.csv",
         ProcurementCSVExportAPIView.as_view(),
         name="export-procurement-csv",
+    ),
+    path(
+        "dashboard/attention/",
+        DashboardAttentionAPIView.as_view(),
+        name="dashboard-attention",
     ),
 ]
