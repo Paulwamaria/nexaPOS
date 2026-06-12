@@ -68,6 +68,9 @@ export default function InventoryPage() {
   const [productSearch, setProductSearch] = useState("");
   const [page, setPage] = useState(1);
   const [count, setCount] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<
+    "ALL" | "ACTIVE" | "INACTIVE"
+  >("ALL");
 
   const branchId = 2;
 
@@ -75,13 +78,19 @@ export default function InventoryPage() {
     const q = productSearch.toLowerCase();
 
     return stocks.filter((stock) => {
-      return (
+      const matchesSearch =
         stock.product.name.toLowerCase().includes(q) ||
         stock.product.sku.toLowerCase().includes(q) ||
-        stock.branch.toLowerCase().includes(q)
-      );
+        stock.branch.toLowerCase().includes(q);
+
+      const matchesStatus =
+        statusFilter === "ALL" ||
+        (statusFilter === "ACTIVE" && stock.product.is_active !== false) ||
+        (statusFilter === "INACTIVE" && stock.product.is_active === false);
+
+      return matchesSearch && matchesStatus;
     });
-  }, [stocks, productSearch]);
+  }, [stocks, productSearch, statusFilter]);
 
   async function loadInventory() {
     setLoading(true);
@@ -248,7 +257,7 @@ export default function InventoryPage() {
 
     try {
       const [stocksRes, productsRes, categoriesRes] = await Promise.all([
-        api.get(`/inventory/stocks/?page=${pageNumber}`),
+        api.get(`/inventory/stocks/?include_inactive=true&page=${pageNumber}`),
         api.get("/inventory/products/"),
         api.get("/inventory/categories/"),
       ]);
@@ -314,6 +323,23 @@ export default function InventoryPage() {
         <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_420px]">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <h2 className="text-xl font-semibold">Stock Levels</h2>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {["ALL", "ACTIVE", "INACTIVE"].map((status) => (
+                <button
+                  key={status}
+                  onClick={() =>
+                    setStatusFilter(status as "ALL" | "ACTIVE" | "INACTIVE")
+                  }
+                  className={`rounded-lg px-4 py-2 text-sm ${
+                    statusFilter === status
+                      ? "bg-emerald-500 text-slate-950"
+                      : "border border-white/10 text-slate-300 hover:bg-white/10"
+                  }`}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
             <input
               value={productSearch}
               onChange={(e) => setProductSearch(e.target.value)}
@@ -348,6 +374,17 @@ export default function InventoryPage() {
                         <tr key={stock.id} className="border-b border-white/5">
                           <td className="py-3 font-medium">
                             {stock.product.name}
+                            <span
+                              className={`ml-2 rounded-full px-2 py-1 text-xs font-semibold ${
+                                stock.product.is_active === false
+                                  ? "bg-red-500/20 text-red-200"
+                                  : "bg-emerald-500/20 text-emerald-200"
+                              }`}
+                            >
+                              {stock.product.is_active === false
+                                ? "INACTIVE"
+                                : "ACTIVE"}
+                            </span>
                           </td>
                           <td className="py-3 text-slate-400">
                             {stock.product.sku}

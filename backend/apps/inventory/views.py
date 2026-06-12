@@ -6,7 +6,7 @@ from apps.audit.services import create_audit_log
 from rest_framework.generics import (
     ListAPIView,
     ListCreateAPIView,
-    RetrieveUpdateDestroyAPIView,
+    RetrieveUpdateAPIView,
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -33,15 +33,26 @@ class ProductListAPIView(ListAPIView):
 
 
 class BranchStockListAPIView(ListAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStoreKeeperOrAdmin]
     serializer_class = BranchStockSerializer
 
     def get_queryset(self):
-        return BranchStock.objects.select_related(
+        queryset = BranchStock.objects.select_related(
             "branch",
             "product",
             "product__category",
-        )
+        ).order_by("branch__name", "product__name")
+
+        branch_id = self.request.query_params.get("branch_id")
+        include_inactive = self.request.query_params.get("include_inactive")
+
+        if branch_id:
+            queryset = queryset.filter(branch_id=branch_id)
+
+        if include_inactive != "true":
+            queryset = queryset.filter(product__is_active=True)
+
+        return queryset
 
 
 class LowStockListAPIView(ListAPIView):
@@ -153,7 +164,7 @@ class ProductListCreateAPIView(ListCreateAPIView):
         return ProductSerializer
 
 
-class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
+class ProductDetailAPIView(RetrieveUpdateAPIView):
     permission_classes = [IsStoreKeeperOrAdmin]
     queryset = Product.objects.select_related("category").all()
 
