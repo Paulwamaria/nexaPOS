@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     "apps.reports.apps.ReportsConfig",
     "apps.audit.apps.AuditConfig",
     "apps.suppliers.apps.SuppliersConfig",
+    "apps.core",
+    
 ]
 
 AUTH_USER_MODEL = "accounts.User"
