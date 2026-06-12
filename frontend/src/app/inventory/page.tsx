@@ -472,166 +472,171 @@ export default function InventoryPage() {
             )}
           </div>
 
-          {/* create category form */}
-          <form
-            onSubmit={createCategory}
-            className="rounded-2xl border border-white/10 bg-white/5 p-5"
-          >
-            <h2 className="text-xl font-semibold">Create Category</h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Add a new product category for organizing your catalog.
-            </p>
-
-            <input
-              required
-              className="mt-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-              placeholder="Category name e.g. Beverages"
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-            />
-
-            <button
-              disabled={creatingCategory}
-              className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+          <div className="space-y-6">
+            {/* create category form */}
+            <form
+              onSubmit={createCategory}
+              className="rounded-2xl border border-white/10 bg-white/5 p-5"
             >
-              {creatingCategory ? "Creating..." : "Create Category"}
-            </button>
-          </form>
-          {/* create product form */}
-          <form
-            onSubmit={createProduct}
-            className="rounded-2xl border border-white/10 bg-white/5 p-5"
-          >
-            <h2 className="text-xl font-semibold">Create Product</h2>
+              <h2 className="text-xl font-semibold">Create Category</h2>
+              <p className="mt-1 text-sm text-slate-400">
+                Add a new product category for organizing your catalog.
+              </p>
 
-            <input
-              required
-              className="mt-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-              placeholder="Product name"
-              value={productName}
-              onChange={(e) => setProductName(e.target.value)}
-            />
+              <input
+                required
+                className="mt-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                placeholder="Category name e.g. Beverages"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+              />
 
-            <input
-              required
-              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-              placeholder="SKU / Barcode"
-              value={sku}
-              onChange={(e) => setSku(e.target.value)}
-            />
-
-            <select
-              required
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              <button
+                disabled={creatingCategory}
+                className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+              >
+                {creatingCategory ? "Creating..." : "Create Category"}
+              </button>
+            </form>
+            {/* create product form */}
+            <form
+              onSubmit={createProduct}
+              className="rounded-2xl border border-white/10 bg-white/5 p-5"
             >
-              <option value="">Select category</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+              <h2 className="text-xl font-semibold">Create Product</h2>
 
-            <input
-              required
-              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-              placeholder="Cost price"
-              value={costPrice}
-              onChange={(e) => setCostPrice(e.target.value)}
-            />
+              <input
+                required
+                className="mt-4 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                placeholder="Product name"
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+              />
 
-            <input
-              required
-              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-              placeholder="Retail price"
-              value={retailPrice}
-              onChange={(e) => setRetailPrice(e.target.value)}
-            />
+              <input
+                required
+                className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                placeholder="SKU / Barcode"
+                value={sku}
+                onChange={(e) => setSku(e.target.value)}
+              />
 
-            <input
-              required
-              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-              placeholder="Wholesale price"
-              value={wholesalePrice}
-              onChange={(e) => setWholesalePrice(e.target.value)}
-            />
+              <select
+                required
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              >
+                <option value="">Select category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
 
-            <input
-              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-              placeholder="Opening stock"
-              value={openingStock}
-              onChange={(e) => setOpeningStock(e.target.value)}
-            />
+              <input
+                required
+                className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                placeholder="Cost price"
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
+              />
 
-            <button className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400">
-              Create Product
-            </button>
-          </form>
+              <input
+                required
+                className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                placeholder="Retail price"
+                value={retailPrice}
+                onChange={(e) => setRetailPrice(e.target.value)}
+              />
 
-          <form
-            onSubmit={adjustStock}
-            className="rounded-2xl border border-white/10 bg-white/5 p-5"
-          >
-            <div className="flex items-center gap-2">
-              <PlusCircle className="text-emerald-400" />
-              <h2 className="text-xl font-semibold">Adjust Stock</h2>
-            </div>
+              <input
+                required
+                className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                placeholder="Wholesale price"
+                value={wholesalePrice}
+                onChange={(e) => setWholesalePrice(e.target.value)}
+              />
 
-            <label className="mt-5 block text-sm text-slate-300">Product</label>
-            <select
-              required
-              value={selectedProductId}
-              onChange={(e) => setSelectedProductId(e.target.value)}
-              className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              <input
+                className="mt-3 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                placeholder="Opening stock"
+                value={openingStock}
+                onChange={(e) => setOpeningStock(e.target.value)}
+              />
+
+              <button className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400">
+                Create Product
+              </button>
+            </form>
+            {/* Adjust Stock form */}
+
+            <form
+              onSubmit={adjustStock}
+              className="rounded-2xl border border-white/10 bg-white/5 p-5"
             >
-              <option value="">Select product</option>
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name} — {product.sku}
-                </option>
-              ))}
-            </select>
+              <div className="flex items-center gap-2">
+                <PlusCircle className="text-emerald-400" />
+                <h2 className="text-xl font-semibold">Adjust Stock</h2>
+              </div>
 
-            <label className="mt-4 block text-sm text-slate-300">
-              Adjustment Type
-            </label>
-            <select
-              value={adjustmentType}
-              onChange={(e) =>
-                setAdjustmentType(
-                  e.target.value as "ADJUSTMENT_IN" | "ADJUSTMENT_OUT",
-                )
-              }
-              className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-            >
-              <option value="ADJUSTMENT_IN">Adjustment In</option>
-              <option value="ADJUSTMENT_OUT">Adjustment Out</option>
-            </select>
+              <label className="mt-5 block text-sm text-slate-300">
+                Product
+              </label>
+              <select
+                required
+                value={selectedProductId}
+                onChange={(e) => setSelectedProductId(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              >
+                <option value="">Select product</option>
+                {products.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name} — {product.sku}
+                  </option>
+                ))}
+              </select>
 
-            <label className="mt-4 block text-sm text-slate-300">
-              Quantity
-            </label>
-            <input
-              required
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-            />
+              <label className="mt-4 block text-sm text-slate-300">
+                Adjustment Type
+              </label>
+              <select
+                value={adjustmentType}
+                onChange={(e) =>
+                  setAdjustmentType(
+                    e.target.value as "ADJUSTMENT_IN" | "ADJUSTMENT_OUT",
+                  )
+                }
+                className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              >
+                <option value="ADJUSTMENT_IN">Adjustment In</option>
+                <option value="ADJUSTMENT_OUT">Adjustment Out</option>
+              </select>
 
-            <label className="mt-4 block text-sm text-slate-300">Notes</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="mt-2 min-h-24 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
-              placeholder="Reason for adjustment"
-            />
+              <label className="mt-4 block text-sm text-slate-300">
+                Quantity
+              </label>
+              <input
+                required
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+              />
 
-            <button className="mt-5 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400">
-              Save Adjustment
-            </button>
-          </form>
+              <label className="mt-4 block text-sm text-slate-300">Notes</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="mt-2 min-h-24 w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3"
+                placeholder="Reason for adjustment"
+              />
+
+              <button className="mt-5 w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 hover:bg-emerald-400">
+                Save Adjustment
+              </button>
+            </form>
+          </div>
 
           {editingProduct && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">

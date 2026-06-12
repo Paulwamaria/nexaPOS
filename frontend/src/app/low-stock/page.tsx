@@ -4,11 +4,12 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
-import { AlertMessage } from "@/components/AlertMessage";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { unwrapList } from "@/lib/pagination";
+import { PaginationControls } from "@/components/PaginationControls";
+import { useToast } from "@/components/ToastProvider";
 
 type Product = {
   id: number;
@@ -29,21 +30,34 @@ export default function LowStockPage() {
   const { user, loadingUser } = useCurrentUser();
 
   const [items, setItems] = useState<LowStockItem[]>([]);
-  const [message, setMessage] = useState("");
+  const { showToast } = useToast();
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
 
-  async function loadLowStock() {
+  async function loadLowStock(pageNumber = page) {
     try {
-      const res = await api.get("/inventory/low-stock/");
+      const res = await api.get(`/inventory/low-stock/?page=${pageNumber}`);
+
       const itemsData = unwrapList(res.data);
+
       setItems(itemsData);
-    } catch {
-      setMessage("Failed to load low stock items.");
+
+      setCount(Array.isArray(res.data) ? itemsData.length : res.data.count);
+
+      setPage(pageNumber);
+    } catch (error: any) {
+      showToast({
+        tone: "error",
+        title: "Loading low stock failed",
+        description:
+          error?.response?.data?.detail || "Failed to load low stock items.",
+      });
     }
   }
 
   useEffect(() => {
     if (!loadingUser) {
-      loadLowStock();
+      loadLowStock(1);
     }
   }, [loadingUser]);
 
@@ -62,8 +76,6 @@ export default function LowStockPage() {
           title="Low Stock"
           description="Products that have reached or fallen below their reorder level."
         />
-
-        <AlertMessage message={message} tone="error" />
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
           <div className="overflow-x-auto">
@@ -115,6 +127,12 @@ export default function LowStockPage() {
                 )}
               </tbody>
             </table>
+            <PaginationControls
+              page={page}
+              count={count}
+              label="low stock items"
+              onPageChange={loadLowStock}
+            />
           </div>
         </section>
       </div>

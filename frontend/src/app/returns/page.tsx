@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { unwrapList } from "@/lib/pagination";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useToast } from "@/components/ToastProvider";
+import { PaginationControls } from "@/components/PaginationControls";
 
 type Sale = {
   id: number;
@@ -42,16 +43,26 @@ export default function ReturnsPage() {
   const [confirmReturn, setConfirmReturn] = useState(false);
   const [processingReturn, setProcessingReturn] = useState(false);
   const { showToast } = useToast();
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
 
-  async function loadSales() {
-    const res = await api.get("/sales/");
-    setSales(unwrapList(res.data));
+  async function loadSales(pageNumber = page) {
+    try {
+      const res = await api.get(`/sales/?page=${pageNumber}`);
+
+      setSales(unwrapList(res.data));
+
+      setCount(Array.isArray(res.data) ? res.data.length : res.data.count);
+
+      setPage(pageNumber);
+    } catch (err: any) {
+      showToast({
+        tone: "error",
+        title: "Loading sales failed",
+        description: err?.response?.data?.detail || "Please try again.",
+      });
+    }
   }
-
-  useEffect(() => {
-    loadSales();
-  }, []);
-
   async function loadSaleDetail(id: string) {
     setSelectedSaleId(id);
     setSelectedItemId("");
@@ -130,6 +141,9 @@ export default function ReturnsPage() {
     }
   }
 
+  useEffect(() => {
+    loadSales(1);
+  }, []);
   const { user, loadingUser } = useCurrentUser();
 
   if (loadingUser) {
@@ -178,6 +192,12 @@ export default function ReturnsPage() {
                   </button>
                 ))
               )}
+              <PaginationControls
+                page={page}
+                count={count}
+                label="sales"
+                onPageChange={loadSales}
+              />
             </div>
           </div>
 

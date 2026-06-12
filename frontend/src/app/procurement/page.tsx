@@ -10,6 +10,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { unwrapList } from "@/lib/pagination";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useToast } from "@/components/ToastProvider";
+import { PaginationControls } from "@/components/PaginationControls";
+import { AxiosError } from "axios";
 type Supplier = {
   id: number;
   name: string;
@@ -51,42 +53,52 @@ export default function ProcurementPage() {
   const [poToReceive, setPoToReceive] = useState<PurchaseOrder | null>(null);
   const [receivingPO, setReceivingPO] = useState(false);
   const { showToast } = useToast();
+  const [poPage, setPoPage] = useState(1);
+  const [poCount, setPoCount] = useState(0);
 
-  async function loadData() {
+  async function loadData(pageNumber = poPage) {
     try {
       const suppliersRes = await api.get("/procurement/suppliers/");
       setSuppliers(unwrapList(suppliersRes.data));
-    } catch (err) {
+    } catch (err: any) {
       showToast({
         tone: "error",
-        title: "Loading data failed",
-        description: error?.response?.data?.detail || "Please try again.",
+        title: "Loading suppliers failed",
+        description: err?.response?.data?.detail || "Please try again.",
       });
     }
 
     try {
       const productsRes = await api.get("/inventory/products/");
       setProducts(unwrapList(productsRes.data));
-    } catch (err) {
+    } catch (err: any) {
       showToast({
         tone: "error",
         title: "Loading products failed",
-        description: error?.response?.data?.detail || "Please try again.",
+        description: err?.response?.data?.detail || "Please try again.",
       });
     }
 
     try {
-      const poRes = await api.get("/procurement/purchase-orders/");
+      const poRes = await api.get(
+        `/procurement/purchase-orders/?page=${pageNumber}`,
+      );
+
       setPurchaseOrders(unwrapList(poRes.data));
-    } catch (err) {
+
+      setPoCount(
+        Array.isArray(poRes.data) ? poRes.data.length : poRes.data.count,
+      );
+
+      setPoPage(pageNumber);
+    } catch (err: any) {
       showToast({
         tone: "error",
-        title: "Loading POS failed",
-        description: error?.response?.data?.detail || "Please try again.",
+        title: "Loading purchase orders failed",
+        description: err?.response?.data?.detail || "Please try again.",
       });
     }
   }
-
   useEffect(() => {
     loadData();
   }, []);
@@ -342,6 +354,12 @@ export default function ProcurementPage() {
                 </tbody>
               </table>
             )}
+            <PaginationControls
+              page={poPage}
+              count={poCount}
+              label="purchase orders"
+              onPageChange={loadData}
+            />
           </div>
         </section>
         <ConfirmDialog

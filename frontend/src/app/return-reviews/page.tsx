@@ -4,10 +4,11 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
-import { AlertMessage } from "@/components/AlertMessage";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { api } from "@/lib/api";
 import { unwrapList } from "@/lib/pagination";
+import { PaginationControls } from "@/components/PaginationControls";
+import { useToast } from "@/components/ToastProvider";
 
 type SaleReturn = {
   id: number;
@@ -28,32 +29,51 @@ export default function ReturnReviewsPage() {
   const { user, loadingUser } = useCurrentUser();
 
   const [returns, setReturns] = useState<SaleReturn[]>([]);
-  const [message, setMessage] = useState("");
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
+  const { showToast } = useToast();
 
-  async function loadReturns() {
+  async function loadReturns(pageNumber = page) {
     try {
-      const res = await api.get("/sales/returns/");
+      const res = await api.get(`/sales/returns/?page=${pageNumber}`);
+
       setReturns(unwrapList(res.data));
-    } catch {
-      setMessage("Failed to load returns.");
+
+      setCount(Array.isArray(res.data) ? res.data.length : res.data.count);
+
+      setPage(pageNumber);
+    } catch (err: any) {
+      showToast({
+        tone: "error",
+        title: "Loading returns failed",
+        description: err?.response?.data?.detail || "Please try again.",
+      });
     }
   }
 
   useEffect(() => {
     if (!loadingUser) {
-      loadReturns();
+      loadReturns(1);
     }
   }, [loadingUser]);
 
   async function markReviewed(id: number) {
-    setMessage("");
-
     try {
       await api.post(`/sales/returns/${id}/review/`);
-      setMessage("Return marked as reviewed.");
+      showToast({
+        tone: "success",
+        title: "Review Successful",
+        description: "Return marked as reviewed.",
+      });
       await loadReturns();
     } catch {
-      setMessage("Failed to review return.");
+      showToast({
+        tone: "error",
+        title: "Review failed",
+        description:
+          err?.response?.data?.detail ||
+          "Failed to review return, please try again.",
+      });
     }
   }
 
@@ -72,8 +92,6 @@ export default function ReturnReviewsPage() {
           title="Return Reviews"
           description="Review suspicious or high-risk customer returns."
         />
-
-        <AlertMessage message={message} />
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
           <div className="overflow-x-auto">
@@ -147,6 +165,12 @@ export default function ReturnReviewsPage() {
                 )}
               </tbody>
             </table>
+            <PaginationControls
+              page={page}
+              count={count}
+              label="returns"
+              onPageChange={loadReturns}
+            />
           </div>
         </section>
       </div>

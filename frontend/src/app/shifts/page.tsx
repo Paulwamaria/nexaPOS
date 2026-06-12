@@ -8,6 +8,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { api } from "@/lib/api";
 import { unwrapList } from "@/lib/pagination";
 import { useToast } from "@/components/ToastProvider";
+import { PaginationControls } from "@/components/PaginationControls";
 
 type CashShift = {
   id: number;
@@ -27,13 +28,19 @@ export default function ShiftsPage() {
 
   const [shifts, setShifts] = useState<CashShift[]>([]);
   const { showToast } = useToast();
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
 
-  async function loadShifts() {
+  async function loadShifts(pageNumber = page) {
     try {
-      const res = await api.get("/sales/shifts/");
+      const res = await api.get(`/sales/shifts/?page=${pageNumber}`);
+
       const shiftsData = unwrapList(res.data);
+
       setShifts(shiftsData);
-    } catch {
+      setCount(Array.isArray(res.data) ? shiftsData.length : res.data.count);
+      setPage(pageNumber);
+    } catch (error: any) {
       showToast({
         tone: "error",
         title: "Loading shifts failed",
@@ -46,7 +53,7 @@ export default function ShiftsPage() {
 
   useEffect(() => {
     if (!loadingUser) {
-      loadShifts();
+      loadShifts(1);
     }
   }, [loadingUser]);
 
@@ -137,6 +144,12 @@ export default function ShiftsPage() {
                 )}
               </tbody>
             </table>
+            <PaginationControls
+              page={page}
+              count={count}
+              label="shifts"
+              onPageChange={loadShifts}
+            />
           </div>
         </section>
       </div>

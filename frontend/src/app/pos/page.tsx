@@ -102,6 +102,7 @@ export default function POSPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [confirmCloseShift, setConfirmCloseShift] = useState(false);
   const { showToast } = useToast();
+  
 
   async function loadPOS() {
     const stocksRes = await api.get(`/inventory/stocks/?branch_id=${branchId}`);
