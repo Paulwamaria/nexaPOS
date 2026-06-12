@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { AlertMessage } from "@/components/AlertMessage";
 import { EmptyState } from "@/components/EmptyState";
 import { unwrapList } from "@/lib/pagination";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 type Supplier = {
   id: number;
   name: string;
@@ -48,6 +49,8 @@ export default function ProcurementPage() {
   const [costPrice, setCostPrice] = useState("0");
 
   const [message, setMessage] = useState("");
+  const [poToReceive, setPoToReceive] = useState<PurchaseOrder | null>(null);
+  const [receivingPO, setReceivingPO] = useState(false);
 
   async function loadData() {
     try {
@@ -134,16 +137,20 @@ export default function ProcurementPage() {
   }
 
   async function receivePurchaseOrder(id: number) {
+    setReceivingPO(true);
     setMessage("");
 
     try {
       await api.post(`/procurement/purchase-orders/${id}/receive/`);
       setMessage("Purchase order received successfully.");
+      setPoToReceive(null);
       await loadData();
     } catch (error: any) {
       setMessage(
         error?.response?.data?.detail || "Failed to receive purchase order.",
       );
+    } finally {
+      setReceivingPO(false);
     }
   }
 
@@ -291,7 +298,7 @@ export default function ProcurementPage() {
                       <td className="py-3">
                         {po.status !== "RECEIVED" ? (
                           <button
-                            onClick={() => receivePurchaseOrder(po.id)}
+                            onClick={() => setPoToReceive(po)}
                             className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950"
                           >
                             Receive
@@ -307,6 +314,19 @@ export default function ProcurementPage() {
             )}
           </div>
         </section>
+        <ConfirmDialog
+          open={!!poToReceive}
+          title="Receive Purchase Order?"
+          description={`This will mark ${poToReceive?.order_number} as received and increase branch stock. This action affects inventory records.`}
+          confirmLabel="Receive Goods"
+          loading={receivingPO}
+          onCancel={() => setPoToReceive(null)}
+          onConfirm={() => {
+            if (poToReceive) {
+              receivePurchaseOrder(poToReceive.id);
+            }
+          }}
+        />
       </main>
     </AppShell>
   );
