@@ -10,6 +10,7 @@ from apps.suppliers.models import PurchaseOrder
 from rest_framework.permissions import IsAuthenticated
 from apps.audit.models import AuditLog
 from apps.suppliers.models import PurchaseOrder
+from decimal import Decimal
 
 from apps.reports.exports import (
     export_sales_csv,
