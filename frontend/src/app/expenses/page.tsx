@@ -106,8 +106,8 @@ export default function ExpensesPage() {
 
     try {
       await api.post("/expenses/", {
-        branch_id: Number(branchId),
-        category_id: Number(categoryId),
+        branch: Number(branchId),
+        category: Number(categoryId),
         amount,
         description,
         expense_date: expenseDate,
@@ -127,7 +127,8 @@ export default function ExpensesPage() {
       showToast({
         tone: "error",
         title: "Expense creation failed",
-        description: error?.response?.data?.detail || "Please try again.",
+        description:
+          JSON.stringify(error?.response?.data) || "Please try again.",
       });
     }
   }

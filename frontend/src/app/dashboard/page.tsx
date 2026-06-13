@@ -13,6 +13,7 @@ import {
   RotateCcw,
   ShieldCheck,
   Truck,
+  TrendingUp,
 } from "lucide-react";
 import { logout } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
@@ -73,6 +74,21 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const { showToast } = useToast();
+
+  async function loadDashboardReport() {
+    try {
+      const res = await api.get("/reports/dashboard/");
+      setReport(res.data);
+      console.log("dashboard report:", report);
+    } catch (error: any) {
+      showToast({
+        tone: "error",
+        title: "Dashboard report failed",
+        description:
+          error?.response?.data?.detail || "Unable to load dashboard report.",
+      });
+    }
+  }
 
   async function loadSummary() {
     try {
@@ -157,6 +173,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!loading) {
+      loadDashboardReport();
       loadSummary();
       loadAttention();
       loadActivity();
@@ -199,19 +216,21 @@ export default function DashboardPage() {
           />
 
           <DashboardCard
-            title="Returns Today"
-            value={`KES ${summary?.returns_today ?? "0.00"}`}
-            subtitle="Refunds processed today"
-            icon={<RotateCcw />}
-            accent="orange"
-          />
-
-          <DashboardCard
             title="Expenses"
             value={`KES ${report?.total_expenses ?? "0.00"}`}
             subtitle="Today"
             icon={<Wallet />}
             accent="amber"
+          />
+
+          <DashboardCard
+            title="Net Profit"
+            value={`KES ${report?.net_profit_estimate ?? "0.00"}`}
+            subtitle="After expenses"
+            icon={<TrendingUp />}
+            accent={
+              Number(report?.net_profit_estimate ?? 0) >= 0 ? "emerald" : "red"
+            }
           />
         </section>
 
